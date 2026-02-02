@@ -27,7 +27,8 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
   const [approvalStatus, setApprovalStatus] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  const API_BASE_URL = "http://localhost:5000";
+  //const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://borg-manila-be.onrender.com";
 
   const isApproved = approvalStatus === 1;
 

@@ -18,7 +18,8 @@ function App() {
   const [hasEmployeeProfile, setHasEmployeeProfile] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
+//const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://borg-manila-be.onrender.com";
   useEffect(() => {
     // Check if user is already logged in (from localStorage)
     const storedToken = localStorage.getItem("token");
@@ -50,7 +51,7 @@ function App() {
       }
 
       try {
-        const response = await fetch("http://localhost:5000/api/employee/profile", {
+        const response = await fetch(`${API_BASE_URL}/api/employee/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

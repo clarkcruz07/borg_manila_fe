@@ -8,8 +8,8 @@ function ChangePassword({ onPasswordChanged, token, userId }) {
   const [success, setSuccess] = useState(false);
 
   // Use the same backend base URL as Login
-  const API_BASE_URL = "http://localhost:5000";
-
+  //const API_BASE_URL = "http://localhost:5000";
+  const API_BASE_URL = "https://borg-manila-be.onrender.com";
   const handleChangePassword = async (e) => {
     e.preventDefault();
     setError("");

@@ -15,7 +15,8 @@ function Users({ token, userRole }) {
   const [submitting, setSubmitting] = useState(false);
   const [createdUserDetails, setCreatedUserDetails] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-
+//const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://borg-manila-be.onrender.com";
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener('resize', handleResize);
@@ -25,7 +26,7 @@ function Users({ token, userRole }) {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-     const response = await fetch("http://localhost:5000/api/auth/users", {
+     const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -61,7 +62,7 @@ function Users({ token, userRole }) {
 
     try {
       setSubmitting(true);
-      const response = await fetch("http://localhost:5000/api/auth/register", {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

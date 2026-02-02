@@ -1,7 +1,7 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5000";
-
+//const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://borg-manila-be.onrender.com";
 export const uploadReceipt = (file, token, signal) => {
   const formData = new FormData();
   formData.append("receipt", file);

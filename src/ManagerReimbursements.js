@@ -11,7 +11,8 @@ function ManagerReimbursements({ token }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedUsers, setExpandedUsers] = useState(new Set());
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-
+//const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://borg-manila-be.onrender.com";
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -41,7 +42,7 @@ function ManagerReimbursements({ token }) {
       setError("");
       
       const response = await fetch(
-        `http://localhost:5000/api/receipts/manager/all?startDate=${startDate}&endDate=${endDate}`,
+        `${API_BASE_URL}/api/receipts/manager/all?startDate=${startDate}&endDate=${endDate}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -194,7 +195,7 @@ function ManagerReimbursements({ token }) {
       if (receipt.filePath) {
         try {
           // Load image and add to PDF
-          const imageUrl = `http://localhost:5000/uploads/${encodeURI(receipt.filePath)}`;
+          const imageUrl = `${API_BASE_URL}/uploads/${encodeURI(receipt.filePath)}`;
           const imgData = await loadImageAsDataURL(imageUrl);
           
           const imgWidth = 80;

@@ -7,7 +7,8 @@ function HRApprovals({ token }) {
   const [approving, setApproving] = useState(null);
   const [success, setSuccess] = useState("");
 
-  const API_BASE_URL = "http://localhost:5000";
+//const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://borg-manila-be.onrender.com";
 
   const fetchPendingApprovals = async () => {
     try {
