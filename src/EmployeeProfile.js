@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import borgImg from "./assets/imgs/borg_img.jpg";
 
 function EmployeeProfile({ token, userId, onProfileCompleted }) {
   const [formData, setFormData] = useState({

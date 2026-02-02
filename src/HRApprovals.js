@@ -9,10 +9,6 @@ function HRApprovals({ token }) {
 
   const API_BASE_URL = "http://localhost:5000";
 
-  useEffect(() => {
-    fetchPendingApprovals();
-  }, [token]);
-
   const fetchPendingApprovals = async () => {
     try {
       setLoading(true);
@@ -37,6 +33,10 @@ function HRApprovals({ token }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchPendingApprovals();
+  }, [token]);
 
   const handleApprove = async (employeeId) => {
     try {

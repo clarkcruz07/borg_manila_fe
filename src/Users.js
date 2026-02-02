@@ -22,10 +22,6 @@ function Users({ token, userRole }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [token]);
-
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -47,6 +43,10 @@ function Users({ token, userRole }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [token]);
 
   const handleAddUser = async (e) => {
     e.preventDefault();
