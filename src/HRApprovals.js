@@ -36,6 +36,7 @@ function HRApprovals({ token }) {
 
   useEffect(() => {
     fetchPendingApprovals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const handleApprove = async (employeeId) => {
