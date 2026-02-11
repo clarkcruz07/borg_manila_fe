@@ -10,7 +10,7 @@ function Leaves({ token, userId, userRole }) {
   const [activeTab, setActiveTab] = useState("apply");
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
 
   // Leave application form
   const [formData, setFormData] = useState({
@@ -28,6 +28,7 @@ function Leaves({ token, userId, userRole }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchLeaveBalance();
     fetchMyLeaves();
@@ -219,7 +220,7 @@ function Leaves({ token, userId, userRole }) {
               <div style={{ fontSize: isMobile ? 11 : 12, color: "#6c757d", marginBottom: 5 }}>
                 Total Credits
               </div>
-              <div style={{ fontSize: isMobile ? 28 : 36, fontWeight: "bold", color: "#007bff" }}>
+              <div style={{ fontSize: isMobile ? 28 : 36, fontWeight: "bold", color: "#dc3545" }}>
                 {leaveBalance.totalCredits}
               </div>
             </div>
@@ -295,8 +296,8 @@ function Leaves({ token, userId, userRole }) {
               padding: isMobile ? "10px 15px" : "12px 24px",
               backgroundColor: "transparent",
               border: "none",
-              borderBottom: activeTab === "apply" ? "3px solid #007bff" : "3px solid transparent",
-              color: activeTab === "apply" ? "#007bff" : "#6c757d",
+              borderBottom: activeTab === "apply" ? "3px solid #dc3545" : "3px solid transparent",
+              color: activeTab === "apply" ? "#dc3545" : "#6c757d",
               fontWeight: activeTab === "apply" ? "600" : "normal",
               cursor: "pointer",
               fontSize: isMobile ? 13 : 14
@@ -310,8 +311,8 @@ function Leaves({ token, userId, userRole }) {
               padding: isMobile ? "10px 15px" : "12px 24px",
               backgroundColor: "transparent",
               border: "none",
-              borderBottom: activeTab === "myLeaves" ? "3px solid #007bff" : "3px solid transparent",
-              color: activeTab === "myLeaves" ? "#007bff" : "#6c757d",
+              borderBottom: activeTab === "myLeaves" ? "3px solid #dc3545" : "3px solid transparent",
+              color: activeTab === "myLeaves" ? "#dc3545" : "#6c757d",
               fontWeight: activeTab === "myLeaves" ? "600" : "normal",
               cursor: "pointer",
               fontSize: isMobile ? 13 : 14
@@ -416,7 +417,7 @@ function Leaves({ token, userId, userRole }) {
             {formData.startDate && formData.endDate && (
               <div
                 style={{
-                  backgroundColor: "#e7f3ff",
+                  backgroundColor: "#fdecef",
                   padding: isMobile ? 10 : 12,
                   borderRadius: 4,
                   marginBottom: 20,
@@ -453,7 +454,7 @@ function Leaves({ token, userId, userRole }) {
             <button
               type="submit"
               style={{
-                backgroundColor: "#007bff",
+                backgroundColor: "#dc3545",
                 color: "#fff",
                 padding: isMobile ? "10px 20px" : "12px 30px",
                 border: "none",

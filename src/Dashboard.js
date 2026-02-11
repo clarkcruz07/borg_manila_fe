@@ -7,7 +7,7 @@ function Dashboard({ token, userRole, userId }) {
   const [leaveBalance, setLeaveBalance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -88,7 +88,7 @@ function Dashboard({ token, userRole, userId }) {
     };
 
     fetchReceiptsData();
-  }, [token, userRole, userId]);
+  }, [token, userRole, userId, API_BASE_URL]);
 
   const cardStyle = {
     backgroundColor: "#fff",
@@ -154,11 +154,11 @@ function Dashboard({ token, userRole, userId }) {
           {/* My Receipts This Month */}
           <div style={{
             ...cardStyle,
-            borderTop: "4px solid #007bff"
+            borderTop: "4px solid #dc3545"
           }}>
             <div style={cardTitleStyle}>My Receipts</div>
             <div>
-              <div style={{ ...cardValueStyle, color: "#007bff" }}>{receiptsCount}</div>
+              <div style={{ ...cardValueStyle, color: "#dc3545" }}>{receiptsCount}</div>
               <div style={cardSubtitleStyle}>This Month</div>
             </div>
           </div>

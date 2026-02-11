@@ -15,8 +15,9 @@ function Users({ token, userRole }) {
   const [formSuccess, setFormSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [createdUserDetails, setCreatedUserDetails] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
   
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -160,6 +161,18 @@ function Users({ token, userRole }) {
 
   // Only Manager (1) and HR (2) can add users
   const canAddUsers = userRole === 1 || userRole === 2;
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredUsers = users.filter((user) => {
+    if (!normalizedSearch) return true;
+    const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim().toLowerCase();
+    const position = (user.position || "").toLowerCase();
+    const email = (user.email || "").toLowerCase();
+    return (
+      fullName.includes(normalizedSearch) ||
+      position.includes(normalizedSearch) ||
+      email.includes(normalizedSearch)
+    );
+  });
 
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? 15 : 0 }}>
@@ -179,7 +192,12 @@ function Users({ token, userRole }) {
             gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(250px, 1fr))",
             gap: isMobile ? 15 : 20
           }}></div>
-          <p style={{ margin: 0, fontSize: isMobile ? 13 : 14 }}>Total Employees: <strong>{users.length}</strong></p>
+          <p style={{ margin: 0, fontSize: isMobile ? 13 : 14 }}>
+            Total Employees: <strong>{users.length}</strong>
+          </p>
+          <p style={{ margin: "4px 0 0 0", fontSize: isMobile ? 12 : 13, color: "#6c757d" }}>
+            Showing: <strong>{filteredUsers.length}</strong>
+          </p>
         </div>
         {canAddUsers && (
           <button
@@ -373,7 +391,7 @@ function Users({ token, userRole }) {
               disabled={submitting}
               style={{
                 padding: "10px 20px",
-                backgroundColor: submitting ? "#ccc" : "#007bff",
+                backgroundColor: submitting ? "#ccc" : "#dc3545",
                 color: "#fff",
                 border: "none",
                 borderRadius: 4,
@@ -389,10 +407,28 @@ function Users({ token, userRole }) {
         </div>
       )}
 
-    
+      {/* Search */}
+      <div style={{ marginBottom: 15 }}>
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search by name, position, or email"
+          style={{
+            width: "100%",
+            padding: isMobile ? "8px 10px" : "10px 12px",
+            border: "1px solid #ddd",
+            borderRadius: 6,
+            fontSize: isMobile ? 13 : 14,
+            boxSizing: "border-box",
+          }}
+        />
+      </div>
 
       {users.length === 0 ? (
         <p>No employees found</p>
+      ) : filteredUsers.length === 0 ? (
+        <p style={{ color: "#6c757d" }}>No employees matched your search.</p>
       ) : (
         /* Employee Cards View */
         <div style={{ 
@@ -401,7 +437,7 @@ function Users({ token, userRole }) {
           gap: isMobile ? 15 : 20, 
           marginTop: 20 
         }}>
-          {users.map((user, idx) => (
+          {filteredUsers.map((user, idx) => (
             <div key={idx} style={{
               backgroundColor: "#fff",
               border: "1px solid #ddd",
@@ -431,7 +467,7 @@ function Users({ token, userRole }) {
                       height: 80,
                       borderRadius: "50%",
                       objectFit: "cover",
-                      border: "3px solid #007bff",
+                      border: "3px solid #dc3545",
                       boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
                     }}
                   />
@@ -479,11 +515,22 @@ function Users({ token, userRole }) {
                 {user.position || "—"}
               </div>
 
+              {/*Company */}
+              <div style={{ 
+                textAlign: "center", 
+                fontSize: 12, 
+                color: "#6c757d",
+                marginBottom: 12
+              }}>
+                {user.company 
+                  ? `Company: ${user.company}` 
+                  : "Company not set"}
+              </div>
               {/* Email */}
               <div style={{ 
                 textAlign: "center", 
                 fontSize: 13, 
-                color: "#007bff",
+                color: "#dc3545",
                 marginBottom: 8,
                 wordBreak: "break-word"
               }}>
@@ -501,11 +548,12 @@ function Users({ token, userRole }) {
                   ? `Hired: ${new Date(user.dateHired).toLocaleDateString()}` 
                   : "Hire date not set"}
               </div>
+              
 {/*
               
               <div style={{ textAlign: "center", marginBottom: 8 }}>
                 <span style={{
-                  backgroundColor: user.role === 1 ? "#cfe2ff" : user.role === 2 ? "#fff3cd" : "#d1e7dd",
+                  backgroundColor: user.role === 1 ? "#f8d7da" : user.role === 2 ? "#fff3cd" : "#d1e7dd",
                   color: user.role === 1 ? "#084298" : user.role === 2 ? "#664d03" : "#0f5132",
                   padding: "4px 12px",
                   borderRadius: 12,

@@ -24,6 +24,11 @@ function App() {
 }
 
 function AppContent() {
+  const COLOR_DANGER = "#dc3545";
+  const COLOR_DANGER_ACCENT = "#f96f7d";
+  const COLOR_NAV_ACTIVE = COLOR_DANGER;
+  const COLOR_NAV_ACTIVE_ACCENT = COLOR_DANGER_ACCENT;
+
   const navigate = useNavigate();
   const location = useLocation();
   const [currentUser, setCurrentUser] = useState(null);
@@ -35,7 +40,7 @@ function AppContent() {
   const [hasEmployeeProfile, setHasEmployeeProfile] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
   useEffect(() => {
     // Check if user is already logged in (from localStorage)
     const storedToken = localStorage.getItem("token");
@@ -62,6 +67,7 @@ function AppContent() {
   }, []);
 
   // Check if employee profile exists (only on initial mount)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const checkEmployeeProfile = async () => {
       if (!token) {
@@ -117,6 +123,7 @@ function AppContent() {
   }, [token, API_BASE_URL]);
   
   // Separate effect to handle initial navigation only
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!checkingProfile && token) {
       if (location.pathname === '/') {
@@ -194,6 +201,18 @@ function AppContent() {
           .sidebar {
             transform: translateX(-100%);
             transition: transform 0.3s ease;
+            top: 62px !important;
+            height: calc(100vh - 62px) !important;
+          }
+          .sidebar nav button {
+            padding: 9px 12px !important;
+            margin-bottom: 6px !important;
+            font-size: 13px !important;
+            line-height: 1.2 !important;
+          }
+          .sidebar nav button[data-subnav="true"] {
+            padding-left: 22px !important;
+            font-size: 12px !important;
           }
           .sidebar.open {
             transform: translateX(0);
@@ -204,6 +223,28 @@ function AppContent() {
           }
           .mobile-header {
             display: flex !important;
+          }
+        }
+        @media (max-height: 820px), (max-width: 1366px) {
+          .sidebar nav button {
+            padding: 8px 12px !important;
+            margin-bottom: 4px !important;
+            font-size: 13px !important;
+            line-height: 1.15 !important;
+          }
+          .sidebar nav button[data-subnav="true"] {
+            padding-left: 20px !important;
+            font-size: 12px !important;
+          }
+          .sidebar > div:first-child {
+            padding: 14px !important;
+            margin-bottom: 12px !important;
+          }
+          .sidebar > nav {
+            padding: 0 12px !important;
+          }
+          .sidebar [style*="position: absolute"][style*="bottom: 20px"] {
+            bottom: 10px !important;
           }
         }
         @media (min-width: 769px) {
@@ -223,7 +264,7 @@ function AppContent() {
         top: 0,
         left: 0,
         right: 0,
-        backgroundColor: "#2c3e50",
+        backgroundColor: "#333",
         color: "#fff",
         padding: "15px 20px",
         zIndex: 1001,
@@ -244,7 +285,14 @@ function AppContent() {
         >
           ☰
         </button>
-        <h2 style={{ margin: 0, fontSize: 18 }}>Borg HCMS</h2>
+        <img
+          src="/borg-white-red.png"
+          alt="Borg HCMS"
+          style={{ height: 28, width: "auto", objectFit: "contain" }}
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
         <div style={{ width: 34 }}></div>
       </div>
 
@@ -277,7 +325,7 @@ function AppContent() {
         {/* Sidebar */}
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`} style={{
           width: 250,
-          backgroundColor: "#2c3e50",
+          backgroundColor: "#333",
           color: "#fff",
           padding: "20px 0",
           boxShadow: "2px 0 5px rgba(0,0,0,0.1)",
@@ -291,8 +339,8 @@ function AppContent() {
           zIndex: 1000,
           boxSizing: "border-box"
         }}>
-        <div style={{ padding: "20px", borderBottom: "1px solid #34495e", marginBottom: 20 }}>
-          <h2 style={{ margin: "0 0 5px 0", fontSize: 18 }}>Borg HCMS</h2>
+        <div style={{ padding: "20px", borderBottom: "1px solid #fff", marginBottom: 20 }}>
+         
           <p style={{ margin: 0, fontSize: 12, color: "#bdc3c7" }}>Logged in as: {currentUser}</p>
         </div>
 
@@ -320,7 +368,7 @@ function AppContent() {
             style={{
               width: "100%",
               padding: "12px 15px",
-              backgroundColor: location.pathname === '/profile' ? "#007bff" : "transparent",
+              backgroundColor: location.pathname === '/profile' ? COLOR_NAV_ACTIVE : "transparent",
               color: "#fff",
               border: "none",
               borderRadius: 4,
@@ -329,7 +377,7 @@ function AppContent() {
               fontSize: 14,
               textAlign: "left",
               transition: "all 0.3s ease",
-              borderLeft: location.pathname === '/profile' ? "4px solid #28a745" : "4px solid transparent"
+              borderLeft: location.pathname === '/profile' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent"
             }}
             onMouseEnter={(e) => {
               if (location.pathname !== '/profile') {
@@ -350,7 +398,7 @@ function AppContent() {
             style={{
               width: "100%",
               padding: "12px 15px",
-              backgroundColor: location.pathname === '/dashboard' ? "#007bff" : "transparent",
+              backgroundColor: location.pathname === '/dashboard' ? COLOR_NAV_ACTIVE : "transparent",
               color: hasEmployeeProfile ? "#fff" : "#6c757d",
               border: "none",
               borderRadius: 4,
@@ -359,7 +407,7 @@ function AppContent() {
               fontSize: 14,
               textAlign: "left",
               transition: "all 0.3s ease",
-              borderLeft: location.pathname === '/dashboard' ? "4px solid #28a745" : "4px solid transparent",
+              borderLeft: location.pathname === '/dashboard' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
               opacity: hasEmployeeProfile ? 1 : 0.5
             }}
             onMouseEnter={(e) => {
@@ -381,7 +429,7 @@ function AppContent() {
             style={{
               width: "100%",
               padding: "12px 15px",
-              backgroundColor: location.pathname === '/users' ? "#007bff" : "transparent",
+              backgroundColor: location.pathname === '/users' ? COLOR_NAV_ACTIVE : "transparent",
               color: hasEmployeeProfile ? "#fff" : "#6c757d",
               border: "none",
               borderRadius: 4,
@@ -390,7 +438,7 @@ function AppContent() {
               fontSize: 14,
               textAlign: "left",
               transition: "all 0.3s ease",
-              borderLeft: location.pathname === '/users' ? "4px solid #28a745" : "4px solid transparent",
+              borderLeft: location.pathname === '/users' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
               opacity: hasEmployeeProfile ? 1 : 0.5
             }}
             onMouseEnter={(e) => {
@@ -412,7 +460,7 @@ function AppContent() {
             style={{
               width: "100%",
               padding: "12px 15px",
-              backgroundColor: location.pathname === '/biometrics' ? "#007bff" : "transparent",
+              backgroundColor: location.pathname === '/biometrics' ? COLOR_DANGER : "transparent",
               color: hasEmployeeProfile ? "#fff" : "#6c757d",
               border: "none",
               borderRadius: 4,
@@ -421,7 +469,7 @@ function AppContent() {
               fontSize: 14,
               textAlign: "left",
               transition: "all 0.3s ease",
-              borderLeft: location.pathname === '/biometrics' ? "4px solid #28a745" : "4px solid transparent",
+              borderLeft: location.pathname === '/biometrics' ? `4px solid ${COLOR_DANGER_ACCENT}` : "4px solid transparent",
               opacity: hasEmployeeProfile ? 1 : 0.5
             }}
             onMouseEnter={(e) => {
@@ -437,13 +485,47 @@ function AppContent() {
           >
               Biometrics {!hasEmployeeProfile && "🔒"}
           </button>
+          {(userRole === 1 || userRole === 2) && (
+            <button
+              data-subnav="true"
+              onClick={() => { if (hasEmployeeProfile) { navigate('/biometrics/monitor'); setSidebarOpen(false); } }}
+              disabled={!hasEmployeeProfile}
+              style={{
+                width: "100%",
+                padding: "10px 15px 10px 30px",
+                backgroundColor: location.pathname === '/biometrics/monitor' ? COLOR_NAV_ACTIVE : "transparent",
+                color: hasEmployeeProfile ? "#fff" : "#6c757d",
+                border: "none",
+                borderRadius: 4,
+                cursor: hasEmployeeProfile ? "pointer" : "not-allowed",
+                marginBottom: 10,
+                fontSize: 13,
+                textAlign: "left",
+                transition: "all 0.3s ease",
+                borderLeft: location.pathname === '/biometrics/monitor' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
+                opacity: hasEmployeeProfile ? 1 : 0.5
+              }}
+              onMouseEnter={(e) => {
+                if (location.pathname !== "/biometrics/monitor" && hasEmployeeProfile) {
+                  e.target.style.backgroundColor = "#34495e";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (location.pathname !== "/biometrics/monitor" && hasEmployeeProfile) {
+                  e.target.style.backgroundColor = "transparent";
+                }
+              }}
+            >
+              Biometrics Monitor {!hasEmployeeProfile && "ðŸ”’"}
+            </button>
+          )}
           <button
             onClick={() => { if (hasEmployeeProfile) { navigate('/leaves'); setSidebarOpen(false); } }}
             disabled={!hasEmployeeProfile}
             style={{
               width: "100%",
               padding: "12px 15px",
-              backgroundColor: location.pathname === '/leaves' ? "#007bff" : "transparent",
+              backgroundColor: location.pathname === '/leaves' ? COLOR_NAV_ACTIVE : "transparent",
               color: hasEmployeeProfile ? "#fff" : "#6c757d",
               border: "none",
               borderRadius: 4,
@@ -452,7 +534,7 @@ function AppContent() {
               fontSize: 14,
               textAlign: "left",
               transition: "all 0.3s ease",
-              borderLeft: location.pathname === '/leaves' ? "4px solid #28a745" : "4px solid transparent",
+              borderLeft: location.pathname === '/leaves' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
               opacity: hasEmployeeProfile ? 1 : 0.5
             }}
             onMouseEnter={(e) => {
@@ -474,7 +556,7 @@ function AppContent() {
             style={{
               width: "100%",
               padding: "12px 15px",
-              backgroundColor: location.pathname === '/reimbursements' ? "#007bff" : "transparent",
+              backgroundColor: location.pathname === '/reimbursements' ? COLOR_NAV_ACTIVE : "transparent",
               color: hasEmployeeProfile ? "#fff" : "#6c757d",
               border: "none",
               borderRadius: 4,
@@ -483,7 +565,7 @@ function AppContent() {
               fontSize: 14,
               textAlign: "left",
               transition: "all 0.3s ease",
-              borderLeft: location.pathname === '/reimbursements' ? "4px solid #28a745" : "4px solid transparent",
+              borderLeft: location.pathname === '/reimbursements' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
               opacity: hasEmployeeProfile ? 1 : 0.5
             }}
             onMouseEnter={(e) => {
@@ -505,7 +587,7 @@ function AppContent() {
             style={{
               width: "100%",
               padding: "12px 15px",
-              backgroundColor: location.pathname === '/assets' ? "#007bff" : "transparent",
+              backgroundColor: location.pathname === '/assets' ? COLOR_NAV_ACTIVE : "transparent",
               color: hasEmployeeProfile ? "#fff" : "#6c757d",
               border: "none",
               borderRadius: 4,
@@ -514,7 +596,7 @@ function AppContent() {
               fontSize: 14,
               textAlign: "left",
               transition: "all 0.3s ease",
-              borderLeft: location.pathname === '/assets' ? "4px solid #28a745" : "4px solid transparent",
+              borderLeft: location.pathname === '/assets' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
               opacity: hasEmployeeProfile ? 1 : 0.5
             }}
             onMouseEnter={(e) => {
@@ -537,7 +619,7 @@ function AppContent() {
               style={{
                 width: "100%",
                 padding: "12px 15px",
-                backgroundColor: location.pathname === '/approvals' ? "#007bff" : "transparent",
+                backgroundColor: location.pathname === '/approvals' ? COLOR_NAV_ACTIVE : "transparent",
                 color: hasEmployeeProfile ? "#fff" : "#6c757d",
                 border: "none",
                 borderRadius: 4,
@@ -546,7 +628,7 @@ function AppContent() {
                 fontSize: 14,
                 textAlign: "left",
                 transition: "all 0.3s ease",
-                borderLeft: location.pathname === '/approvals' ? "4px solid #28a745" : "4px solid transparent",
+                borderLeft: location.pathname === '/approvals' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
                 opacity: hasEmployeeProfile ? 1 : 0.5
               }}
               onMouseEnter={(e) => {
@@ -571,7 +653,7 @@ function AppContent() {
               style={{
                 width: "100%",
                 padding: "12px 15px",
-                backgroundColor: location.pathname === '/manager-reimbursements' ? "#007bff" : "transparent",
+                backgroundColor: location.pathname === '/manager-reimbursements' ? COLOR_NAV_ACTIVE : "transparent",
                 color: hasEmployeeProfile ? "#fff" : "#6c757d",
                 border: "none",
                 borderRadius: 4,
@@ -580,7 +662,7 @@ function AppContent() {
                 fontSize: 14,
                 textAlign: "left",
                 transition: "all 0.3s ease",
-                borderLeft: location.pathname === '/manager-reimbursements' ? "4px solid #28a745" : "4px solid transparent",
+                borderLeft: location.pathname === '/manager-reimbursements' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
                 opacity: hasEmployeeProfile ? 1 : 0.5
               }}
               onMouseEnter={(e) => {
@@ -601,7 +683,7 @@ function AppContent() {
               style={{
                 width: "100%",
                 padding: "12px 15px",
-                backgroundColor: location.pathname === '/settings' ? "#007bff" : "transparent",
+                backgroundColor: location.pathname === '/settings' ? COLOR_NAV_ACTIVE : "transparent",
                 color: "#fff",
                 border: "none",
                 borderRadius: 4,
@@ -610,7 +692,7 @@ function AppContent() {
                 fontSize: 14,
                 textAlign: "left",
                 transition: "all 0.3s ease",
-                borderLeft: location.pathname === '/settings' ? "4px solid #28a745" : "4px solid transparent",
+                borderLeft: location.pathname === '/settings' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
               }}
               onMouseEnter={(e) => {
                 if (location.pathname !== "/settings") {
@@ -637,7 +719,7 @@ function AppContent() {
             style={{
               width: "100%",
               padding: "10px 15px",
-              backgroundColor: "#dc3545",
+              backgroundColor: COLOR_DANGER,
               color: "#fff",
               border: "none",
               borderRadius: 4,
@@ -650,7 +732,7 @@ function AppContent() {
           <div style={{
           fontSize: 12,
           padding: "10px 0px"
-         }}>Made By: BORG Manila Cuties</div>
+         }}>Made By: BORG Manila Babies</div>
         </div>
       </aside>
 
@@ -690,6 +772,9 @@ function AppContent() {
               <Route path="/users" element={hasEmployeeProfile ? <Users token={token} userRole={userRole} /> : <Navigate to="/profile" replace />} />
               <Route path="/biometrics" element={hasEmployeeProfile ? (
                 <Biometrics token={token} userId={userId} userRole={userRole} />
+              ) : <Navigate to="/profile" replace />} />
+              <Route path="/biometrics/monitor" element={hasEmployeeProfile && (userRole === 1 || userRole === 2) ? (
+                <BiometricsMonitor token={token} userId={userId} />
               ) : <Navigate to="/profile" replace />} />
               <Route path="/leaves" element={hasEmployeeProfile ? <Leaves token={token} userId={userId} userRole={userRole} /> : <Navigate to="/profile" replace />} />
               <Route path="/reimbursements" element={hasEmployeeProfile ? <UploadReceipt token={token} userId={userId} /> : <Navigate to="/profile" replace />} />

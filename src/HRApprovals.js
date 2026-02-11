@@ -12,7 +12,7 @@ function HRApprovals({ token }) {
   const [rejectionReason, setRejectionReason] = useState("");
   const [success, setSuccess] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -261,8 +261,8 @@ function HRApprovals({ token }) {
               padding: isMobile ? "10px 15px" : "12px 24px",
               backgroundColor: "transparent",
               border: "none",
-              borderBottom: activeTab === "profiles" ? "3px solid #007bff" : "3px solid transparent",
-              color: activeTab === "profiles" ? "#007bff" : "#6c757d",
+              borderBottom: activeTab === "profiles" ? "3px solid #dc3545" : "3px solid transparent",
+              color: activeTab === "profiles" ? "#dc3545" : "#6c757d",
               fontWeight: activeTab === "profiles" ? "600" : "normal",
               cursor: "pointer",
               fontSize: isMobile ? 13 : 14
@@ -281,8 +281,8 @@ function HRApprovals({ token }) {
               padding: isMobile ? "10px 15px" : "12px 24px",
               backgroundColor: "transparent",
               border: "none",
-              borderBottom: activeTab === "leaves" ? "3px solid #007bff" : "3px solid transparent",
-              color: activeTab === "leaves" ? "#007bff" : "#6c757d",
+              borderBottom: activeTab === "leaves" ? "3px solid #dc3545" : "3px solid transparent",
+              color: activeTab === "leaves" ? "#dc3545" : "#6c757d",
               fontWeight: activeTab === "leaves" ? "600" : "normal",
               cursor: "pointer",
               fontSize: isMobile ? 13 : 14
@@ -331,11 +331,11 @@ function HRApprovals({ token }) {
           {pendingEmployees.length === 0 ? (
             <div
               style={{
-                backgroundColor: "#e7f3ff",
-                color: "#004085",
+                backgroundColor: "#fdecef",
+                color: "#721c24",
                 padding: isMobile ? 15 : 20,
                 borderRadius: 4,
-                border: "1px solid #b3d9ff",
+                border: "1px solid #f5c6cb",
                 fontSize: isMobile ? 13 : 14
               }}
             >
@@ -505,11 +505,11 @@ function HRApprovals({ token }) {
           {pendingLeaves.length === 0 ? (
             <div
               style={{
-                backgroundColor: "#e7f3ff",
-                color: "#004085",
+                backgroundColor: "#fdecef",
+                color: "#721c24",
                 padding: isMobile ? 15 : 20,
                 borderRadius: 4,
-                border: "1px solid #b3d9ff",
+                border: "1px solid #f5c6cb",
                 fontSize: isMobile ? 13 : 14
               }}
             >
@@ -555,7 +555,7 @@ function HRApprovals({ token }) {
                         <strong>Leave Type:</strong>{" "}
                         <span style={{ 
                           textTransform: "capitalize",
-                          backgroundColor: "#e7f3ff",
+                          backgroundColor: "#fdecef",
                           padding: "2px 8px",
                           borderRadius: 4,
                           fontSize: isMobile ? 12 : 13

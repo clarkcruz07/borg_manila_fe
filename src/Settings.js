@@ -18,7 +18,7 @@ function Settings({ token }) {
   const [deptForm, setDeptForm] = useState({ name: "", description: "" });
   const [companyForm, setCompanyForm] = useState({ name: "", description: "" });
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -26,6 +26,7 @@ function Settings({ token }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchData();
   }, []);
@@ -406,7 +407,7 @@ function Settings({ token }) {
                   type="submit"
                   style={{
                     padding: "10px 20px",
-                    backgroundColor: "#28a745",
+                    backgroundColor: "#dc3545",
                     color: "#fff",
                     border: "none",
                     borderRadius: 4,
@@ -471,7 +472,7 @@ function Settings({ token }) {
                           onClick={() => handleEditDepartment(dept)}
                           style={{
                             padding: "5px 15px",
-                            backgroundColor: "#007bff",
+                            backgroundColor: "#dc3545",
                             color: "#fff",
                             border: "none",
                             borderRadius: 4,
@@ -486,9 +487,12 @@ function Settings({ token }) {
                           onClick={() => handleDeleteDepartment(dept._id)}
                           style={{
                             padding: "5px 15px",
-                            backgroundColor: "#dc3545",
-                            color: "#fff",
-                            border: "none",
+                            backgroundColor: "transparent",
+                            borderWidth: 1,
+                            borderStyle: "solid",
+                            borderColor: "#dc3545" ,
+                            color: "#dc3545",
+                            border: "1px solid #dc3545",
                             borderRadius: 4,
                             cursor: "pointer",
                             fontSize: 12,
@@ -582,7 +586,7 @@ function Settings({ token }) {
                   type="submit"
                   style={{
                     padding: "10px 20px",
-                    backgroundColor: "#28a745",
+                    backgroundColor: "#dc3545",
                     color: "#fff",
                     border: "none",
                     borderRadius: 4,
@@ -647,7 +651,7 @@ function Settings({ token }) {
                           onClick={() => handleEditCompany(company)}
                           style={{
                             padding: "5px 15px",
-                            backgroundColor: "#007bff",
+                            backgroundColor: "#dc3545",
                             color: "#fff",
                             border: "none",
                             borderRadius: 4,
@@ -662,9 +666,12 @@ function Settings({ token }) {
                           onClick={() => handleDeleteCompany(company._id)}
                           style={{
                             padding: "5px 15px",
-                            backgroundColor: "#dc3545",
-                            color: "#fff",
-                            border: "none",
+                            backgroundColor: "transparent",
+                            borderWidth: 1,
+                            borderStyle: "solid",
+                            borderColor: "#dc3545" ,
+                            color: "#dc3545",
+                            border: "1px solid #dc3545",
                             borderRadius: 4,
                             cursor: "pointer",
                             fontSize: 12,

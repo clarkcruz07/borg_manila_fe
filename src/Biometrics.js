@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
 // API Base URL from environment variable
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
 
 // Company location (replace with your actual office coordinates)
 const OFFICE_LOCATION = {
@@ -234,6 +234,7 @@ function Biometrics({ token, userId, userRole }) {
   }, [stream]);
 
   // Auto-fetch location and status on mount, start continuous tracking
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchClockStatus();
     
@@ -435,7 +436,7 @@ function Biometrics({ token, userId, userRole }) {
               width: isMobile ? 50 : 60,
               height: isMobile ? 50 : 60,
               border: `${isMobile ? '5' : '6'}px solid #f3f3f3`,
-              borderTop: `${isMobile ? '5' : '6'}px solid #007bff`,
+              borderTop: `${isMobile ? '5' : '6'}px solid #dc3545`,
               borderRadius: "50%",
               margin: "0 auto 25px",
               animation: "spin 1s linear infinite"
@@ -483,7 +484,7 @@ function Biometrics({ token, userId, userRole }) {
       >
         
         {clockInStatus && (
-         <div style={{ color: "rgb(0, 64, 133)", padding: 10, backgroundColor: "rgb(231, 243, 255)", borderRadius: 5, marginBottom: 15 }}>
+         <div style={{ color: "rgb(114, 28, 36)", padding: 10, backgroundColor: "rgb(253, 236, 239)", borderRadius: 5, marginBottom: 15 }}>
            <strong>{clockInStatus}</strong> 
           </div>
         )}
@@ -654,28 +655,7 @@ function Biometrics({ token, userId, userRole }) {
               </div>
             </div>
 
-            {/* Distance Card */}
-            <div style={{ marginBottom: 15, paddingBottom: 15, borderBottom: "1px solid #dee2e6" }}>
-              <div style={{ fontSize: 11, color: "#6c757d", marginBottom: 5, fontWeight: 600, textTransform: "uppercase" }}>
-                Distance
-              </div>
-              <div>
-                {workMode === 'WFH' ? (
-                  <span style={{ color: "#6c757d", fontSize: 16 }}>N/A</span>
-                ) : distance !== null ? (
-                  <span style={{ 
-                    color: withinRange ? "#28a745" : "#dc3545", 
-                    fontWeight: "bold",
-                    fontSize: 18
-                  }}>
-                    {distance}m
-                  </span>
-                ) : (
-                  <span style={{ color: "#6c757d", fontSize: 16 }}>-</span>
-                )}
-              </div>
-            </div>
-
+            
             {/* Last Action Card */}
             <div style={{ marginBottom: 15, paddingBottom: 15, borderBottom: "1px solid #dee2e6" }}>
               <div style={{ fontSize: 11, color: "#6c757d", marginBottom: 5, fontWeight: 600, textTransform: "uppercase" }}>
@@ -699,30 +679,6 @@ function Biometrics({ token, userId, userRole }) {
                 {workMode === 'WFH' ? (
                   <span style={{
                     padding: "6px 14px",
-                    backgroundColor: "#17a2b8",
-                    color: "white",
-                    borderRadius: 15,
-                    fontSize: 13,
-                    fontWeight: "bold",
-                    display: "inline-block"
-                  }}>
-                    🏠 WFH Mode
-                  </span>
-                ) : withinRange ? (
-                  <span style={{
-                    padding: "6px 14px",
-                    backgroundColor: "#28a745",
-                    color: "white",
-                    borderRadius: 15,
-                    fontSize: 13,
-                    fontWeight: "bold",
-                    display: "inline-block"
-                  }}>
-                    ✅ In Range
-                  </span>
-                ) : (
-                  <span style={{
-                    padding: "6px 14px",
                     backgroundColor: "#dc3545",
                     color: "white",
                     borderRadius: 15,
@@ -730,7 +686,27 @@ function Biometrics({ token, userId, userRole }) {
                     fontWeight: "bold",
                     display: "inline-block"
                   }}>
-                    ❌ Out of Range
+                    WFH Mode
+                  </span>
+                ) : withinRange ? (
+                  <span style={{
+                    color: "#dc3545",
+                    borderRadius: 15,
+                    fontSize: 13,
+                    fontWeight: "bold",
+                    display: "inline-block"
+                  }}>
+                    In Range
+                  </span>
+                ) : (
+                  <span style={{
+                    color: "#dc3545",
+                    borderRadius: 15,
+                    fontSize: 13,
+                    fontWeight: "bold",
+                    display: "inline-block"
+                  }}>
+                    Out of Range
                   </span>
                 )}
               </div>
@@ -755,7 +731,7 @@ function Biometrics({ token, userId, userRole }) {
                   minHeight: 44
                 }}
               >
-                {clockedIn ? "✅ Clocked In" : "🟢 Clock In"}
+                {clockedIn ? "✅ Clocked In" : "Clock In"}
               </button>
 
               <button
@@ -775,7 +751,7 @@ function Biometrics({ token, userId, userRole }) {
                   minHeight: 44
                 }}
               >
-                {!clockedIn ? "Not Clocked In" : "🔴 Clock Out"}
+                {!clockedIn ? "Not Clocked In" : "Clock Out"}
               </button>
             </div>
           </div>
@@ -785,7 +761,6 @@ function Biometrics({ token, userId, userRole }) {
             <thead>
               <tr style={{ backgroundColor: "#f8f9fa", borderBottom: "2px solid #dee2e6" }}>
                 <th style={{ padding: 12, textAlign: "left", fontSize: 14, width: "20%" }}>Location Status</th>
-                <th style={{ padding: 12, textAlign: "left", fontSize: 14, width: "15%" }}>Distance</th>
                 <th style={{ padding: 12, textAlign: "left", fontSize: 14, width: "20%" }}>Last Action</th>
                 <th style={{ padding: 12, textAlign: "center", fontSize: 14, width: "15%" }}>Status</th>
                 <th style={{ padding: 12, textAlign: "center", fontSize: 14, width: "30%" }}>Actions</th>
@@ -815,21 +790,7 @@ function Biometrics({ token, userId, userRole }) {
                     </span>
                   )}
                 </td>
-                <td style={{ padding: 12 }}>
-                  {workMode === 'WFH' ? (
-                    <span style={{ color: "#6c757d" }}>N/A</span>
-                  ) : distance !== null ? (
-                    <span style={{ 
-                      color: withinRange ? "#28a745" : "#dc3545", 
-                      fontWeight: "bold",
-                      fontSize: 16
-                    }}>
-                      {distance}m
-                    </span>
-                  ) : (
-                    <span style={{ color: "#6c757d" }}>-</span>
-                  )}
-                </td>
+               
                 <td style={{ padding: 12 }}>
                   {lastClockIn ? (
                     <span style={{ fontSize: 13 }}>{lastClockIn}</span>
@@ -841,35 +802,33 @@ function Biometrics({ token, userId, userRole }) {
                   {workMode === 'WFH' ? (
                     <span style={{
                       padding: "5px 12px",
-                      backgroundColor: "#17a2b8",
-                      color: "white",
-                      borderRadius: 15,
-                      fontSize: 12,
-                      fontWeight: "bold"
-                    }}>
-                      🏠 WFH Mode
-                    </span>
-                  ) : withinRange ? (
-                    <span style={{
-                      padding: "5px 12px",
-                      backgroundColor: "#28a745",
-                      color: "white",
-                      borderRadius: 15,
-                      fontSize: 12,
-                      fontWeight: "bold"
-                    }}>
-                      ✅ In Range
-                    </span>
-                  ) : (
-                    <span style={{
-                      padding: "5px 12px",
                       backgroundColor: "#dc3545",
                       color: "white",
                       borderRadius: 15,
                       fontSize: 12,
                       fontWeight: "bold"
                     }}>
-                      ❌ Out of Range
+                      WFH Mode
+                    </span>
+                  ) : withinRange ? (
+                    <span style={{
+                      padding: "5px 12px",
+                      color: "#dc3545",
+                      borderRadius: 15,
+                      fontSize: 12,
+                      fontWeight: "bold"
+                    }}>
+                      In Range
+                    </span>
+                  ) : (
+                    <span style={{
+                      padding: "5px 12px",
+                      color: "#dc3545",
+                      borderRadius: 15,
+                      fontSize: 12,
+                      fontWeight: "bold"
+                    }}>
+                      Out of Range
                     </span>
                   )}
                 </td>
@@ -890,7 +849,7 @@ function Biometrics({ token, userId, userRole }) {
                         fontWeight: "bold"
                       }}
                     >
-                      {clockedIn ? "✅ Clocked In" : "🟢 Clock In"}
+                      {clockedIn ? "Clocked In" : "Clock In"}
                     </button>
 
                     <button
@@ -908,7 +867,7 @@ function Biometrics({ token, userId, userRole }) {
                         fontWeight: "bold"
                       }}
                     >
-                      {!clockedIn ? "Not Clocked In" : "🔴 Clock Out"}
+                      {!clockedIn ? "Not Clocked In" : "Clock Out"}
                     </button>
                   </div>
                 </td>
@@ -923,10 +882,10 @@ function Biometrics({ token, userId, userRole }) {
         style={{
           marginTop: 20,
           padding: isMobile ? 12 : 15,
-          backgroundColor: "#e7f3ff",
+          backgroundColor: "#f3f3f3",
           borderRadius: 5,
           fontSize: isMobile ? 13 : 14,
-          color: "#004085",
+          color: "#000",
         }}
       >
         <strong>ℹ️ How it works:</strong>

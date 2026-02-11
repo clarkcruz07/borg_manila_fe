@@ -21,7 +21,7 @@ function LoadingSpinner({ size = "medium", message = "Loading..." }) {
           width: spinnerSize,
           height: spinnerSize,
           border: `${spinnerSize / 10}px solid #f3f3f3`,
-          borderTop: `${spinnerSize / 10}px solid #007bff`,
+          borderTop: `${spinnerSize / 10}px solid #dc3545`,
           borderRadius: "50%",
           animation: "spin 1s linear infinite"
         }}

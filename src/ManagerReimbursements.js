@@ -12,7 +12,7 @@ function ManagerReimbursements({ token }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedUsers, setExpandedUsers] = useState(new Set());
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
   
   useEffect(() => {
     const handleResize = () => {
@@ -314,7 +314,7 @@ function ManagerReimbursements({ token }) {
             disabled={loading}
             style={{
               padding: isMobile ? "10px 20px" : "11px 30px",
-              backgroundColor: "#007bff",
+              backgroundColor: "#dc3545",
               color: "#fff",
               border: "none",
               borderRadius: 4,
@@ -347,18 +347,18 @@ function ManagerReimbursements({ token }) {
       {/* Results Summary */}
       {receipts.length > 0 && (
         <div style={{
-          backgroundColor: "#e7f3ff",
+          backgroundColor: "#fdecef",
           padding: isMobile ? 15 : 20,
           borderRadius: 8,
           marginBottom: 20,
-          border: "1px solid #b3d9ff",
+          border: "1px solid #f5c6cb",
           fontSize: isMobile ? 13 : 15
         }}>
           <div style={{ marginBottom: 8 }}>
             <strong>Summary:</strong> Found {receipts.length} receipt(s) from {groupedByUser.length} employee(s)
           </div>
           <div>
-            <strong>Total Amount:</strong> <span style={{ fontSize: isMobile ? 16 : 18, fontWeight: 700, color: "#007bff" }}>₱{groupedByUser.reduce((sum, user) => sum + user.totalAmount, 0).toFixed(2)}</span>
+            <strong>Total Amount:</strong> <span style={{ fontSize: isMobile ? 16 : 18, fontWeight: 700, color: "#dc3545" }}>₱{groupedByUser.reduce((sum, user) => sum + user.totalAmount, 0).toFixed(2)}</span>
           </div>
         </div>
       )}
@@ -381,7 +381,7 @@ function ManagerReimbursements({ token }) {
               boxSizing: "border-box",
               transition: "border-color 0.2s"
             }}
-            onFocus={(e) => e.target.style.borderColor = "#007bff"}
+            onFocus={(e) => e.target.style.borderColor = "#dc3545"}
             onBlur={(e) => e.target.style.borderColor = "#ddd"}
           />
         </div>
@@ -422,7 +422,7 @@ function ManagerReimbursements({ token }) {
                 <div
                   onClick={() => toggleUserExpanded(userGroup.userId)}
                   style={{
-                    backgroundColor: "#007bff",
+                    backgroundColor: "#dc3545",
                     color: "#fff",
                     padding: isMobile ? "12px 15px" : "15px 20px",
                     display: "flex",
@@ -433,8 +433,8 @@ function ManagerReimbursements({ token }) {
                     flexDirection: isMobile ? "column" : "row",
                     gap: isMobile ? 10 : 0
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#0056b3"}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#007bff"}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#b02a37"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#dc3545"}
                 >
                   <div style={{ flex: 1, width: isMobile ? "100%" : "auto" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -499,7 +499,7 @@ function ManagerReimbursements({ token }) {
                         >
                           {/* Receipt Number */}
                           <div style={{
-                            backgroundColor: "#007bff",
+                            backgroundColor: "#dc3545",
                             color: "#fff",
                             borderRadius: "50%",
                             width: isMobile ? 32 : 36,

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { listReceipts, saveReceipt, uploadReceipt, getJobStatus, cancelJob } from "./api";
 
+const MAX_UPLOAD_FILES = 5;
+
 function UploadReceipt({ token, userId }) {
   const [files, setFiles] = useState([]); // <-- multiple files
   const [loading, setLoading] = useState(false);
@@ -61,7 +63,22 @@ function UploadReceipt({ token, userId }) {
   // Handle multiple file selection
   const handleFiles = (e) => {
     const selected = Array.from(e.target.files);
-    setFiles((prev) => [...prev, ...selected]);
+    let limitExceeded = false;
+    setFiles((prev) => {
+      const combined = [...prev, ...selected];
+      if (combined.length > MAX_UPLOAD_FILES) {
+        limitExceeded = true;
+        return combined.slice(0, MAX_UPLOAD_FILES);
+      }
+      return combined;
+    });
+
+    if (limitExceeded) {
+      setErrorUpload(`Maximum ${MAX_UPLOAD_FILES} images per upload is allowed.`);
+    } else {
+      setErrorUpload("");
+    }
+
     // Reset input value to allow re-uploading the same file
     e.target.value = '';
   };
@@ -102,6 +119,10 @@ function UploadReceipt({ token, userId }) {
 
   const submitReceipt = async () => {
     if (!files.length) return alert("Please select or capture receipts");
+    if (files.length > MAX_UPLOAD_FILES) {
+      setErrorUpload(`Maximum ${MAX_UPLOAD_FILES} images per upload is allowed.`);
+      return;
+    }
 
     setLoading(true);
     setResults([]); // Clear previous results
@@ -440,30 +461,30 @@ function UploadReceipt({ token, userId }) {
           <div
             onClick={() => fileInputRef.current.click()}
             style={{
-              border: "2px dashed #007bff",
+              border: "2px dashed #dc3545",
               padding: isMobile ? 20 : 40,
               cursor: "pointer",
               textAlign: "center",
               marginBottom: 20,
               borderRadius: 8,
-              backgroundColor: "#f0f8ff",
+              backgroundColor: "#fff1f3",
               transition: "all 0.2s ease"
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#e6f3ff";
-              e.currentTarget.style.borderColor = "#0056b3";
+              e.currentTarget.style.backgroundColor = "#fdecef";
+              e.currentTarget.style.borderColor = "#b02a37";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#f0f8ff";
-              e.currentTarget.style.borderColor = "#007bff";
+              e.currentTarget.style.backgroundColor = "#fff1f3";
+              e.currentTarget.style.borderColor = "#dc3545";
             }}
           >
             <div style={{ fontSize: 48, marginBottom: 10 }}>📁</div>
-            <div style={{ fontSize: 18, fontWeight: 600, color: "#007bff" }}>
+            <div style={{ fontSize: 18, fontWeight: 600, color: "#dc3545" }}>
               Click to select receipt images
             </div>
             <div style={{ fontSize: 14, color: "#6c757d", marginTop: 8 }}>
-              You can select multiple files at once
+              You can select up to {MAX_UPLOAD_FILES} files at once
             </div>
           </div>
         </>
@@ -485,7 +506,7 @@ function UploadReceipt({ token, userId }) {
             onClick={() => cameraInputRef.current.click()}
             style={{
               padding: "16px 20px",
-              backgroundColor: "#007bff",
+              backgroundColor: "#dc3545",
               color: "#fff",
               border: "none",
               borderRadius: 8,
@@ -560,12 +581,12 @@ function UploadReceipt({ token, userId }) {
       
       {errorUpload && (
         <div style={{
-          backgroundColor: "#e7f3ff",
+          backgroundColor: "#fdecef",
           color: "#000",
           padding: "12px 16px",
           borderRadius: 8,
           marginBottom: 20,
-          border: "1px solid #b3d9ff"
+          border: "1px solid #f5c6cb"
         }}>
           {errorUpload}
         </div>
@@ -585,7 +606,7 @@ function UploadReceipt({ token, userId }) {
         }}>
           <div className="spinner" style={{
             border: "6px solid #f3f3f3",
-            borderTop: "6px solid #007bff",
+            borderTop: "6px solid #dc3545",
             borderRadius: "50%",
             width: 50,
             height: 50,

@@ -60,7 +60,7 @@ function Assets({ token }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [filterStatus, setFilterStatus] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -408,7 +408,7 @@ function Assets({ token }) {
   const getStatusColor = (status) => {
     const colors = {
       Pending: { bg: "#fff3cd", text: "#856404" },
-      Approved: { bg: "#cce5ff", text: "#004085" },
+      Approved: { bg: "#f8d7da", text: "#721c24" },
       Rejected: { bg: "#f8d7da", text: "#721c24" },
       Deployed: { bg: "#d4edda", text: "#155724" },
     };
@@ -496,9 +496,9 @@ function Assets({ token }) {
           style={{
             padding: isMobile ? "8px 16px" : "10px 20px",
             backgroundColor: "transparent",
-            color: activeTab === "requests" ? "#007bff" : "#6c757d",
+            color: activeTab === "requests" ? "#dc3545" : "#6c757d",
             border: "none",
-            borderBottom: activeTab === "requests" ? "3px solid #007bff" : "3px solid transparent",
+            borderBottom: activeTab === "requests" ? "3px solid #dc3545" : "3px solid transparent",
             cursor: "pointer",
             fontSize: isMobile ? 14 : 16,
             fontWeight: activeTab === "requests" ? "bold" : "normal",
@@ -512,9 +512,9 @@ function Assets({ token }) {
             style={{
               padding: isMobile ? "8px 16px" : "10px 20px",
               backgroundColor: "transparent",
-              color: activeTab === "inventory" ? "#007bff" : "#6c757d",
+              color: activeTab === "inventory" ? "#dc3545" : "#6c757d",
               border: "none",
-              borderBottom: activeTab === "inventory" ? "3px solid #007bff" : "3px solid transparent",
+              borderBottom: activeTab === "inventory" ? "3px solid #dc3545" : "3px solid transparent",
               cursor: "pointer",
               fontSize: isMobile ? 14 : 16,
               fontWeight: activeTab === "inventory" ? "bold" : "normal",
@@ -703,7 +703,7 @@ function Assets({ token }) {
                           style={{
                             width: "100%",
                             padding: isMobile ? "8px 12px" : "10px 14px",
-                            backgroundColor: "#007bff",
+                            backgroundColor: "#dc3545",
                             color: "#fff",
                             border: "none",
                             borderRadius: 4,
@@ -759,8 +759,8 @@ function Assets({ token }) {
                       <div style={{
                         display: "inline-block",
                         padding: "4px 8px",
-                        backgroundColor: asset.status === "Available" ? "#d4edda" : asset.status === "Assigned" ? "#cce5ff" : "#fff3cd",
-                        color: asset.status === "Available" ? "#155724" : asset.status === "Assigned" ? "#004085" : "#856404",
+                        backgroundColor: asset.status === "Available" ? "#d4edda" : asset.status === "Assigned" ? "#f8d7da" : "#fff3cd",
+                        color: asset.status === "Available" ? "#155724" : asset.status === "Assigned" ? "#721c24" : "#856404",
                         borderRadius: 4,
                         fontSize: 12,
                         fontWeight: "bold",
@@ -802,7 +802,7 @@ function Assets({ token }) {
                       style={{
                         flex: 1,
                         padding: "8px 12px",
-                        backgroundColor: "#007bff",
+                        backgroundColor: "#dc3545",
                         color: "#fff",
                         border: "none",
                         borderRadius: 4,
@@ -975,7 +975,7 @@ function Assets({ token }) {
                   style={{
                     flex: 1,
                     padding: "12px 20px",
-                    backgroundColor: submitting ? "#6c757d" : "#28a745",
+                    backgroundColor: submitting ? "#6c757d" : "#dc3545",
                     color: "#fff",
                     border: "none",
                     borderRadius: 4,
@@ -1290,7 +1290,7 @@ function Assets({ token }) {
                 style={{
                   flex: 1,
                   padding: "12px 20px",
-                  backgroundColor: submitting ? "#6c757d" : "#007bff",
+                  backgroundColor: submitting ? "#6c757d" : "#dc3545",
                   color: "#fff",
                   border: "none",
                   borderRadius: 4,
@@ -1715,7 +1715,7 @@ function Assets({ token }) {
                   style={{
                     flex: 1,
                     padding: "12px 20px",
-                    backgroundColor: submitting ? "#6c757d" : "#28a745",
+                    backgroundColor: submitting ? "#6c757d" : "#dc3545",
                     color: "#fff",
                     border: "none",
                     borderRadius: 4,

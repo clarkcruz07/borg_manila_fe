@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 
+const MAX_PROFILE_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB hard limit before processing
+const TARGET_PROFILE_IMAGE_BYTES = 500 * 1024; // Compress toward 500KB
+const MAX_IMAGE_DIMENSION = 1600;
+
 function EmployeeProfile({ token, userId, onProfileCompleted }) {
   const [formData, setFormData] = useState({
     firstName: "",
@@ -32,7 +36,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
   const [approvalStatus, setApprovalStatus] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
 
   const isApproved = approvalStatus === 1;
   const isRejected = approvalStatus === -1;
@@ -133,7 +137,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
     };
 
     fetchData();
-  }, [token]);
+  }, [token, API_BASE_URL]);
 
   const formatGovernmentId = (name, value) => {
     // Remove all non-digits
@@ -193,11 +197,52 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
         return;
       }
       
-      // Validate file size (max 500KB for reasonable upload size)
-      if (file.size > 500 * 1024) {
-        setError("Image size should be less than 500KB. Please resize your image.");
+      // Accept larger mobile captures, then compress in-browser.
+      if (file.size > MAX_PROFILE_IMAGE_UPLOAD_BYTES) {
+        setError("Image is too large. Please upload an image smaller than 10MB.");
         return;
       }
+
+      const compressImageFile = async (inputFile) => {
+        if (inputFile.size <= TARGET_PROFILE_IMAGE_BYTES) {
+          return inputFile;
+        }
+
+        const imageUrl = URL.createObjectURL(inputFile);
+        const img = new Image();
+        img.src = imageUrl;
+
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+
+        const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(img.width, img.height));
+        const width = Math.max(1, Math.round(img.width * scale));
+        const height = Math.max(1, Math.round(img.height * scale));
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const toBlobAsync = (quality) =>
+          new Promise((resolve) => {
+            canvas.toBlob((blob) => resolve(blob), "image/jpeg", quality);
+          });
+
+        let bestBlob = await toBlobAsync(0.9);
+        for (let q = 0.8; q >= 0.4 && bestBlob && bestBlob.size > TARGET_PROFILE_IMAGE_BYTES; q -= 0.1) {
+          const next = await toBlobAsync(q);
+          if (next) bestBlob = next;
+        }
+
+        URL.revokeObjectURL(imageUrl);
+
+        if (!bestBlob) return inputFile;
+        return new File([bestBlob], "profile.jpg", { type: "image/jpeg" });
+      };
 
       // Convert to base64
       const reader = new FileReader();
@@ -243,7 +288,13 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
           });
         }
       };
-      reader.readAsDataURL(file);
+      try {
+        const processedFile = await compressImageFile(file);
+        reader.readAsDataURL(processedFile);
+      } catch (compressionError) {
+        console.error("Image compression error:", compressionError);
+        setError("Unable to process image. Please try another photo.");
+      }
     }
   };
 
@@ -399,7 +450,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
                     height: isMobile ? 100 : 120,
                     borderRadius: "50%",
                     objectFit: "cover",
-                    border: "3px solid #007bff",
+                    border: "3px solid #dc3545",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
                   }}
                 />
@@ -424,7 +475,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
               <label style={{
                 display: "inline-block",
                 padding: "8px 16px",
-                backgroundColor: "#007bff",
+                backgroundColor: "#dc3545",
                 color: "#fff",
                 borderRadius: 4,
                 cursor: (!isApproved && approvalStatus === 0 && !isRejected) ? "not-allowed" : "pointer",
@@ -441,7 +492,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
                 />
               </label>
               <p style={{ fontSize: isMobile ? 11 : 12, color: "#6c757d", marginTop: 8 }}>
-                Max size: 500KB. Formats: JPG, PNG, GIF
+                Max upload: 10MB. Auto-compressed for mobile uploads. Formats: JPG, PNG, GIF
               </p>
               {isApproved && (
                 <p style={{ fontSize: isMobile ? 11 : 12, color: "#28a745", marginTop: 4, fontStyle: "italic" }}>
