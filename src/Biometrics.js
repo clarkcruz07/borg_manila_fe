@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 
 // API Base URL from environment variable
@@ -13,13 +13,13 @@ const OFFICE_LOCATION = {
 
 function Biometrics({ token, userId, userRole }) {
   const [currentLocation, setCurrentLocation] = useState(null);
-  const [distance, setDistance] = useState(null);
   const [withinRange, setWithinRange] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [clockedIn, setClockedIn] = useState(false);
   const [lastClockIn, setLastClockIn] = useState(null);
-  const [locationWatchId, setLocationWatchId] = useState(null);
+  const locationWatchIdRef = useRef(null);
+  const [isTrackingLocation, setIsTrackingLocation] = useState(false);
   const [clockInStatus, setClockInStatus] = useState(null);
   
   // New states for work mode and camera
@@ -40,7 +40,7 @@ function Biometrics({ token, userId, userRole }) {
   }, []);
 
   // Calculate distance between two coordinates (Haversine formula)
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const calculateDistance = useCallback((lat1, lon1, lat2, lon2) => {
     const R = 6371e3; // Earth's radius in meters
     const φ1 = (lat1 * Math.PI) / 180;
     const φ2 = (lat2 * Math.PI) / 180;
@@ -53,10 +53,10 @@ function Biometrics({ token, userId, userRole }) {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     return R * c; // Distance in meters
-  };
+  }, []);
 
   // Get current location
-  const getCurrentLocation = () => {
+  const getCurrentLocation = useCallback(() => {
     setLoading(true);
     setError(null);
 
@@ -79,7 +79,6 @@ function Biometrics({ token, userId, userRole }) {
           OFFICE_LOCATION.longitude
         );
 
-        setDistance(Math.round(dist));
         setWithinRange(dist <= OFFICE_LOCATION.radius);
         setLoading(false);
       },
@@ -99,13 +98,18 @@ function Biometrics({ token, userId, userRole }) {
         maximumAge: 60000, // Allow cached location up to 1 minute old
       }
     );
-  };
+  }, [calculateDistance, workMode]);
 
   // Start continuous location tracking
-  const startLocationTracking = () => {
+  const startLocationTracking = useCallback(() => {
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser");
       return;
+    }
+
+    if (locationWatchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(locationWatchIdRef.current);
+      locationWatchIdRef.current = null;
     }
 
     const watchId = navigator.geolocation.watchPosition(
@@ -121,7 +125,6 @@ function Biometrics({ token, userId, userRole }) {
           OFFICE_LOCATION.longitude
         );
 
-        setDistance(Math.round(dist));
         setWithinRange(dist <= OFFICE_LOCATION.radius);
         setLoading(false);
       },
@@ -138,19 +141,21 @@ function Biometrics({ token, userId, userRole }) {
       }
     );
 
-    setLocationWatchId(watchId);
-  };
+    locationWatchIdRef.current = watchId;
+    setIsTrackingLocation(true);
+  }, [calculateDistance, workMode]);
 
   // Stop location tracking
-  const stopLocationTracking = () => {
-    if (locationWatchId !== null) {
-      navigator.geolocation.clearWatch(locationWatchId);
-      setLocationWatchId(null);
+  const stopLocationTracking = useCallback(() => {
+    if (locationWatchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(locationWatchIdRef.current);
+      locationWatchIdRef.current = null;
+      setIsTrackingLocation(false);
     }
-  };
+  }, []);
 
   // Fetch clock status from backend
-  const fetchClockStatus = async () => {
+  const fetchClockStatus = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/attendance/status`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -162,7 +167,7 @@ function Biometrics({ token, userId, userRole }) {
     } catch (err) {
       console.error('Failed to fetch clock status:', err);
     }
-  };
+  }, [token]);
 
   // Start camera for selfie
   const startCamera = async () => {
@@ -234,7 +239,6 @@ function Biometrics({ token, userId, userRole }) {
   }, [stream]);
 
   // Auto-fetch location and status on mount, start continuous tracking
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchClockStatus();
     
@@ -253,7 +257,7 @@ function Biometrics({ token, userId, userRole }) {
     return () => {
       stopLocationTracking();
     };
-  }, [workMode]); // Re-run when work mode changes
+  }, [workMode, fetchClockStatus, getCurrentLocation, startLocationTracking, stopLocationTracking]); // Re-run when work mode changes
 
   // Perform the actual clock in API call
   const performClockIn = async (imageBlob) => {
@@ -641,7 +645,7 @@ function Biometrics({ token, userId, userRole }) {
                     <span style={{ fontSize: 13, color: "#333" }}>
                       📍 {currentLocation.latitude.toFixed(4)}, {currentLocation.longitude.toFixed(4)}
                     </span>
-                    {locationWatchId && (
+                    {isTrackingLocation && (
                       <div style={{ fontSize: 11, color: "#28a745", marginTop: 3 }}>
                         🔄 Auto-tracking
                       </div>
@@ -778,7 +782,7 @@ function Biometrics({ token, userId, userRole }) {
                       <span style={{ fontSize: 12, color: "#6c757d" }}>
                         📍 {currentLocation.latitude.toFixed(4)}, {currentLocation.longitude.toFixed(4)}
                       </span>
-                      {locationWatchId && (
+                      {isTrackingLocation && (
                         <div style={{ fontSize: 11, color: "#28a745", marginTop: 3 }}>
                           🔄 Auto-tracking
                         </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 
 function Leaves({ token, userId, userRole }) {
@@ -28,13 +28,7 @@ function Leaves({ token, userId, userRole }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    fetchLeaveBalance();
-    fetchMyLeaves();
-  }, [token]);
-
-  const fetchLeaveBalance = async () => {
+  const fetchLeaveBalance = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/leaves/balance`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -46,9 +40,9 @@ function Leaves({ token, userId, userRole }) {
     } catch (err) {
       console.error("Error fetching leave balance:", err);
     }
-  };
+  }, [API_BASE_URL, token]);
 
-  const fetchMyLeaves = async () => {
+  const fetchMyLeaves = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`${API_BASE_URL}/api/leaves/my-leaves`, {
@@ -63,7 +57,12 @@ function Leaves({ token, userId, userRole }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE_URL, token]);
+
+  useEffect(() => {
+    fetchLeaveBalance();
+    fetchMyLeaves();
+  }, [fetchLeaveBalance, fetchMyLeaves]);
 
   const handleChange = (e) => {
     setFormData({

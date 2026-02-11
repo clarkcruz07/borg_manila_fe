@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
 function BiometricsMonitor({ token }) {
@@ -16,7 +16,7 @@ function BiometricsMonitor({ token }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const fetchTodaySummary = async () => {
+  const fetchTodaySummary = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/attendance/today-summary`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -26,9 +26,9 @@ function BiometricsMonitor({ token }) {
       console.error("Failed to fetch summary:", err);
       setError("Failed to load monitoring summary");
     }
-  };
+  }, [API_BASE_URL, token]);
 
-  const fetchAttendanceRecords = async () => {
+  const fetchAttendanceRecords = useCallback(async () => {
     try {
       setLoading(true);
       const params = {};
@@ -52,9 +52,8 @@ function BiometricsMonitor({ token }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE_URL, token, selectedDate]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchTodaySummary();
     fetchAttendanceRecords();
@@ -65,7 +64,7 @@ function BiometricsMonitor({ token }) {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [selectedDate]);
+  }, [fetchTodaySummary, fetchAttendanceRecords]);
 
   const formatTime = (timestamp) => {
     return new Date(timestamp).toLocaleTimeString("en-US", {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 
 function Settings({ token }) {
@@ -26,12 +26,7 @@ function Settings({ token }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [deptResponse, companyResponse] = await Promise.all([
@@ -57,7 +52,11 @@ function Settings({ token }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE_URL, token]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // ==================== DEPARTMENT FUNCTIONS ====================
 

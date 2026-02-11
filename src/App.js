@@ -66,8 +66,7 @@ function AppContent() {
     setLoading(false);
   }, []);
 
-  // Check if employee profile exists (only on initial mount)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Check if employee profile exists
   useEffect(() => {
     const checkEmployeeProfile = async () => {
       if (!token) {
@@ -120,10 +119,9 @@ function AppContent() {
     if (token) {
       checkEmployeeProfile();
     }
-  }, [token, API_BASE_URL]);
+  }, [token, API_BASE_URL, checkingProfile, location.pathname, navigate]);
   
   // Separate effect to handle initial navigation only
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!checkingProfile && token) {
       if (location.pathname === '/') {
@@ -134,7 +132,7 @@ function AppContent() {
         }
       }
     }
-  }, [checkingProfile, hasEmployeeProfile, token]);
+  }, [checkingProfile, hasEmployeeProfile, token, location.pathname, navigate]);
 
   const handleProfileCompleted = () => {
     setHasEmployeeProfile(true);
