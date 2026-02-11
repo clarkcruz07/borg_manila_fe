@@ -1,25 +1,41 @@
 import { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import UploadReceipt from "./UploadReceipt";
 import Login from "./Login";
 import ChangePassword from "./ChangePassword";
 import Users from "./Users";
+import Dashboard from "./Dashboard";
 import EmployeeProfile from "./EmployeeProfile";
 import HRApprovals from "./HRApprovals";
 import ManagerReimbursements from "./ManagerReimbursements";
+import Settings from "./Settings";
+import LoadingSpinner from "./LoadingSpinner";
+import Biometrics from "./Biometrics";
+import BiometricsMonitor from "./BiometricsMonitor";
+import Leaves from "./Leaves";
+import Assets from "./Assets";
 
 function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  );
+}
+
+function AppContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(null);
   const [userId, setUserId] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [needsPasswordChange, setNeedsPasswordChange] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState("profile"); // Default to "profile" for testing
   const [hasEmployeeProfile, setHasEmployeeProfile] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-//const API_BASE_URL = "http://localhost:5000";
-const API_BASE_URL = "https://borg-manila-be.onrender.com";
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
   useEffect(() => {
     // Check if user is already logged in (from localStorage)
     const storedToken = localStorage.getItem("token");
@@ -37,12 +53,15 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
       if (storedPasswordChanged === "false") {
         setNeedsPasswordChange(true);
       }
+    } else {
+      // If no token, we don't need to check profile
+      setCheckingProfile(false);
     }
 
     setLoading(false);
   }, []);
 
-  // Check if employee profile exists
+  // Check if employee profile exists (only on initial mount)
   useEffect(() => {
     const checkEmployeeProfile = async () => {
       if (!token) {
@@ -59,16 +78,28 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
 
         if (response.ok) {
           const profileData = await response.json();
+          
           // Check if profile has all required fields filled AND is approved
-          const isComplete = profileData.firstName && 
+          const isComplete = !!(profileData.firstName && 
                             profileData.lastName && 
                             profileData.birthDate && 
                             profileData.personalEmail && 
                             profileData.mobileNumber && 
                             profileData.position && 
-                            profileData.department;
+                            profileData.department);
           const isApproved = profileData.approval_status === 1;
-          setHasEmployeeProfile(isComplete && isApproved);
+          const hasProfile = isComplete && isApproved;
+          
+          setHasEmployeeProfile(hasProfile);
+          
+          // Only redirect from root path after initial check
+          if (location.pathname === '/' && !checkingProfile) {
+            if (hasProfile) {
+              navigate('/dashboard', { replace: true });
+            } else {
+              navigate('/profile', { replace: true });
+            }
+          }
         } else {
           setHasEmployeeProfile(false);
         }
@@ -80,11 +111,28 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
       }
     };
 
-    checkEmployeeProfile();
-  }, [token]);
+    if (token) {
+      checkEmployeeProfile();
+    }
+  }, [token, API_BASE_URL]);
+  
+  // Separate effect to handle initial navigation only
+  useEffect(() => {
+    if (!checkingProfile && token) {
+      if (location.pathname === '/') {
+        if (hasEmployeeProfile) {
+          navigate('/dashboard', { replace: true });
+        } else {
+          navigate('/profile', { replace: true });
+        }
+      }
+    }
+  }, [checkingProfile, hasEmployeeProfile, token]);
 
   const handleProfileCompleted = () => {
     setHasEmployeeProfile(true);
+    // After profile completion, navigate to dashboard
+    navigate('/dashboard');
   };
 
   const handleLoginSuccess = (idToken, newUserId, passwordChanged, email, role) => {
@@ -108,7 +156,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
   const handlePasswordChanged = () => {
     setNeedsPasswordChange(false);
     localStorage.setItem("passwordChanged", "true");
-    setCurrentUser(userId);
+    setCurrentUser(localStorage.getItem("email") || currentUser);
   };
 
   const handleLogout = () => {
@@ -124,18 +172,8 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
     localStorage.removeItem("role");
   };
 
-  if (loading) {
-    return (
-      <div style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "100vh",
-        fontSize: 18
-      }}>
-        Loading...
-      </div>
-    );
+  if (loading || checkingProfile) {
+    return <LoadingSpinner size="large" message="Initializing application..." />;
   }
 
   // If not logged in, show login page
@@ -206,7 +244,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
         >
           ☰
         </button>
-        <h2 style={{ margin: 0, fontSize: 18 }}>Borg HRIS</h2>
+        <h2 style={{ margin: 0, fontSize: 18 }}>Borg HCMS</h2>
         <div style={{ width: 34 }}></div>
       </div>
 
@@ -254,7 +292,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
           boxSizing: "border-box"
         }}>
         <div style={{ padding: "20px", borderBottom: "1px solid #34495e", marginBottom: 20 }}>
-          <h2 style={{ margin: "0 0 5px 0", fontSize: 18 }}>Borg HRIS</h2>
+          <h2 style={{ margin: "0 0 5px 0", fontSize: 18 }}>Borg HCMS</h2>
           <p style={{ margin: 0, fontSize: 12, color: "#bdc3c7" }}>Logged in as: {currentUser}</p>
         </div>
 
@@ -278,11 +316,11 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
         {/* Navigation buttons */}
         <nav style={{ padding: "0 15px" }}>
           <button
-            onClick={() => { setCurrentPage("profile"); setSidebarOpen(false); }}
+            onClick={() => { navigate('/profile'); setSidebarOpen(false); }}
             style={{
               width: "100%",
               padding: "12px 15px",
-              backgroundColor: currentPage === "profile" ? "#007bff" : "transparent",
+              backgroundColor: location.pathname === '/profile' ? "#007bff" : "transparent",
               color: "#fff",
               border: "none",
               borderRadius: 4,
@@ -291,15 +329,15 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
               fontSize: 14,
               textAlign: "left",
               transition: "all 0.3s ease",
-              borderLeft: currentPage === "profile" ? "4px solid #28a745" : "4px solid transparent"
+              borderLeft: location.pathname === '/profile' ? "4px solid #28a745" : "4px solid transparent"
             }}
             onMouseEnter={(e) => {
-              if (currentPage !== "profile") {
+              if (location.pathname !== '/profile') {
                 e.target.style.backgroundColor = "#34495e";
               }
             }}
             onMouseLeave={(e) => {
-              if (currentPage !== "profile") {
+              if (location.pathname !== '/profile') {
                 e.target.style.backgroundColor = "transparent";
               }
             }}
@@ -307,12 +345,12 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
             My Profile
           </button>
           <button
-            onClick={() => { if (hasEmployeeProfile) { setCurrentPage("users"); setSidebarOpen(false); } }}
+            onClick={() => { if (hasEmployeeProfile) { navigate('/dashboard'); setSidebarOpen(false); } }}
             disabled={!hasEmployeeProfile}
             style={{
               width: "100%",
               padding: "12px 15px",
-              backgroundColor: currentPage === "users" ? "#007bff" : "transparent",
+              backgroundColor: location.pathname === '/dashboard' ? "#007bff" : "transparent",
               color: hasEmployeeProfile ? "#fff" : "#6c757d",
               border: "none",
               borderRadius: 4,
@@ -321,29 +359,29 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
               fontSize: 14,
               textAlign: "left",
               transition: "all 0.3s ease",
-              borderLeft: currentPage === "users" ? "4px solid #28a745" : "4px solid transparent",
+              borderLeft: location.pathname === '/dashboard' ? "4px solid #28a745" : "4px solid transparent",
               opacity: hasEmployeeProfile ? 1 : 0.5
             }}
             onMouseEnter={(e) => {
-              if (currentPage !== "users" && hasEmployeeProfile) {
+              if (location.pathname !== "/dashboard" && hasEmployeeProfile) {
                 e.target.style.backgroundColor = "#34495e";
               }
             }}
             onMouseLeave={(e) => {
-              if (currentPage !== "users" && hasEmployeeProfile) {
+              if (location.pathname !== "/dashboard" && hasEmployeeProfile) {
                 e.target.style.backgroundColor = "transparent";
               }
             }}
           >
-              Users {!hasEmployeeProfile && "🔒"}
+              Dashboard {!hasEmployeeProfile && "🔒"}
           </button>
           <button
-            onClick={() => { if (hasEmployeeProfile) { setCurrentPage("upload"); setSidebarOpen(false); } }}
+            onClick={() => { if (hasEmployeeProfile) { navigate('/users'); setSidebarOpen(false); } }}
             disabled={!hasEmployeeProfile}
             style={{
               width: "100%",
               padding: "12px 15px",
-              backgroundColor: currentPage === "upload" ? "#007bff" : "transparent",
+              backgroundColor: location.pathname === '/users' ? "#007bff" : "transparent",
               color: hasEmployeeProfile ? "#fff" : "#6c757d",
               border: "none",
               borderRadius: 4,
@@ -352,30 +390,154 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
               fontSize: 14,
               textAlign: "left",
               transition: "all 0.3s ease",
-              borderLeft: currentPage === "upload" ? "4px solid #28a745" : "4px solid transparent",
+              borderLeft: location.pathname === '/users' ? "4px solid #28a745" : "4px solid transparent",
               opacity: hasEmployeeProfile ? 1 : 0.5
             }}
             onMouseEnter={(e) => {
-              if (currentPage !== "upload" && hasEmployeeProfile) {
+              if (location.pathname !== "/users" && hasEmployeeProfile) {
                 e.target.style.backgroundColor = "#34495e";
               }
             }}
             onMouseLeave={(e) => {
-              if (currentPage !== "upload" && hasEmployeeProfile) {
+              if (location.pathname !== "/users" && hasEmployeeProfile) {
+                e.target.style.backgroundColor = "transparent";
+              }
+            }}
+          >
+              Employees {!hasEmployeeProfile && "🔒"}
+          </button>
+          <button
+            onClick={() => { if (hasEmployeeProfile) { navigate('/biometrics'); setSidebarOpen(false); } }}
+            disabled={!hasEmployeeProfile}
+            style={{
+              width: "100%",
+              padding: "12px 15px",
+              backgroundColor: location.pathname === '/biometrics' ? "#007bff" : "transparent",
+              color: hasEmployeeProfile ? "#fff" : "#6c757d",
+              border: "none",
+              borderRadius: 4,
+              cursor: hasEmployeeProfile ? "pointer" : "not-allowed",
+              marginBottom: 10,
+              fontSize: 14,
+              textAlign: "left",
+              transition: "all 0.3s ease",
+              borderLeft: location.pathname === '/biometrics' ? "4px solid #28a745" : "4px solid transparent",
+              opacity: hasEmployeeProfile ? 1 : 0.5
+            }}
+            onMouseEnter={(e) => {
+              if (location.pathname !== "/biometrics" && hasEmployeeProfile) {
+                e.target.style.backgroundColor = "#34495e";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (location.pathname !== "/biometrics" && hasEmployeeProfile) {
+                e.target.style.backgroundColor = "transparent";
+              }
+            }}
+          >
+              Biometrics {!hasEmployeeProfile && "🔒"}
+          </button>
+          <button
+            onClick={() => { if (hasEmployeeProfile) { navigate('/leaves'); setSidebarOpen(false); } }}
+            disabled={!hasEmployeeProfile}
+            style={{
+              width: "100%",
+              padding: "12px 15px",
+              backgroundColor: location.pathname === '/leaves' ? "#007bff" : "transparent",
+              color: hasEmployeeProfile ? "#fff" : "#6c757d",
+              border: "none",
+              borderRadius: 4,
+              cursor: hasEmployeeProfile ? "pointer" : "not-allowed",
+              marginBottom: 10,
+              fontSize: 14,
+              textAlign: "left",
+              transition: "all 0.3s ease",
+              borderLeft: location.pathname === '/leaves' ? "4px solid #28a745" : "4px solid transparent",
+              opacity: hasEmployeeProfile ? 1 : 0.5
+            }}
+            onMouseEnter={(e) => {
+              if (location.pathname !== "/leaves" && hasEmployeeProfile) {
+                e.target.style.backgroundColor = "#34495e";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (location.pathname !== "/leaves" && hasEmployeeProfile) {
+                e.target.style.backgroundColor = "transparent";
+              }
+            }}
+          >
+            Leaves {!hasEmployeeProfile && "🔒"}
+          </button>
+          <button
+            onClick={() => { if (hasEmployeeProfile) { navigate('/reimbursements'); setSidebarOpen(false); } }}
+            disabled={!hasEmployeeProfile}
+            style={{
+              width: "100%",
+              padding: "12px 15px",
+              backgroundColor: location.pathname === '/reimbursements' ? "#007bff" : "transparent",
+              color: hasEmployeeProfile ? "#fff" : "#6c757d",
+              border: "none",
+              borderRadius: 4,
+              cursor: hasEmployeeProfile ? "pointer" : "not-allowed",
+              marginBottom: 10,
+              fontSize: 14,
+              textAlign: "left",
+              transition: "all 0.3s ease",
+              borderLeft: location.pathname === '/reimbursements' ? "4px solid #28a745" : "4px solid transparent",
+              opacity: hasEmployeeProfile ? 1 : 0.5
+            }}
+            onMouseEnter={(e) => {
+              if (location.pathname !== "/reimbursements" && hasEmployeeProfile) {
+                e.target.style.backgroundColor = "#34495e";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (location.pathname !== "/reimbursements" && hasEmployeeProfile) {
                 e.target.style.backgroundColor = "transparent";
               }
             }}
           >
             Reimbursements {!hasEmployeeProfile && "🔒"}
           </button>
+          <button
+            onClick={() => { if (hasEmployeeProfile) { navigate('/assets'); setSidebarOpen(false); } }}
+            disabled={!hasEmployeeProfile}
+            style={{
+              width: "100%",
+              padding: "12px 15px",
+              backgroundColor: location.pathname === '/assets' ? "#007bff" : "transparent",
+              color: hasEmployeeProfile ? "#fff" : "#6c757d",
+              border: "none",
+              borderRadius: 4,
+              cursor: hasEmployeeProfile ? "pointer" : "not-allowed",
+              marginBottom: 10,
+              fontSize: 14,
+              textAlign: "left",
+              transition: "all 0.3s ease",
+              borderLeft: location.pathname === '/assets' ? "4px solid #28a745" : "4px solid transparent",
+              opacity: hasEmployeeProfile ? 1 : 0.5
+            }}
+            onMouseEnter={(e) => {
+              if (location.pathname !== "/assets" && hasEmployeeProfile) {
+                e.target.style.backgroundColor = "#34495e";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (location.pathname !== "/assets" && hasEmployeeProfile) {
+                e.target.style.backgroundColor = "transparent";
+              }
+            }}
+          >
+            Asset Management {!hasEmployeeProfile && "🔒"}
+          </button>
           {(userRole === 1 || userRole === 2) && (
             <button
-              onClick={() => { if (hasEmployeeProfile) { setCurrentPage("approvals"); setSidebarOpen(false); } }}
+              onClick={() => { if (hasEmployeeProfile) { navigate('/approvals'); setSidebarOpen(false); } }}
               disabled={!hasEmployeeProfile}
               style={{
                 width: "100%",
                 padding: "12px 15px",
-                backgroundColor: currentPage === "approvals" ? "#007bff" : "transparent",
+                backgroundColor: location.pathname === '/approvals' ? "#007bff" : "transparent",
                 color: hasEmployeeProfile ? "#fff" : "#6c757d",
                 border: "none",
                 borderRadius: 4,
@@ -384,16 +546,16 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                 fontSize: 14,
                 textAlign: "left",
                 transition: "all 0.3s ease",
-                borderLeft: currentPage === "approvals" ? "4px solid #28a745" : "4px solid transparent",
+                borderLeft: location.pathname === '/approvals' ? "4px solid #28a745" : "4px solid transparent",
                 opacity: hasEmployeeProfile ? 1 : 0.5
               }}
               onMouseEnter={(e) => {
-                if (currentPage !== "approvals" && hasEmployeeProfile) {
+                if (location.pathname !== "/approvals" && hasEmployeeProfile) {
                   e.target.style.backgroundColor = "#34495e";
                 }
               }}
               onMouseLeave={(e) => {
-                if (currentPage !== "approvals" && hasEmployeeProfile) {
+                if (location.pathname !== "/approvals" && hasEmployeeProfile) {
                   e.target.style.backgroundColor = "transparent";
                 }
               }}
@@ -402,13 +564,14 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
             </button>
           )}
           {userRole === 1 && (
+            <>
             <button
-              onClick={() => { if (hasEmployeeProfile) { setCurrentPage("managerReimbursements"); setSidebarOpen(false); } }}
+              onClick={() => { if (hasEmployeeProfile) { navigate('/manager-reimbursements'); setSidebarOpen(false); } }}
               disabled={!hasEmployeeProfile}
               style={{
                 width: "100%",
                 padding: "12px 15px",
-                backgroundColor: currentPage === "managerReimbursements" ? "#007bff" : "transparent",
+                backgroundColor: location.pathname === '/manager-reimbursements' ? "#007bff" : "transparent",
                 color: hasEmployeeProfile ? "#fff" : "#6c757d",
                 border: "none",
                 borderRadius: 4,
@@ -417,27 +580,58 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                 fontSize: 14,
                 textAlign: "left",
                 transition: "all 0.3s ease",
-                borderLeft: currentPage === "managerReimbursements" ? "4px solid #28a745" : "4px solid transparent",
+                borderLeft: location.pathname === '/manager-reimbursements' ? "4px solid #28a745" : "4px solid transparent",
                 opacity: hasEmployeeProfile ? 1 : 0.5
               }}
               onMouseEnter={(e) => {
-                if (currentPage !== "managerReimbursements" && hasEmployeeProfile) {
+                if (location.pathname !== "/manager-reimbursements" && hasEmployeeProfile) {
                   e.target.style.backgroundColor = "#34495e";
                 }
               }}
               onMouseLeave={(e) => {
-                if (currentPage !== "managerReimbursements" && hasEmployeeProfile) {
+                if (location.pathname !== "/manager-reimbursements" && hasEmployeeProfile) {
                   e.target.style.backgroundColor = "transparent";
                 }
               }}
             >
               Reimbursement Reports {!hasEmployeeProfile && "🔒"}
             </button>
+            <button
+              onClick={() => { navigate('/settings'); setSidebarOpen(false); }}
+              style={{
+                width: "100%",
+                padding: "12px 15px",
+                backgroundColor: location.pathname === '/settings' ? "#007bff" : "transparent",
+                color: "#fff",
+                border: "none",
+                borderRadius: 4,
+                cursor: "pointer",
+                marginBottom: 10,
+                fontSize: 14,
+                textAlign: "left",
+                transition: "all 0.3s ease",
+                borderLeft: location.pathname === '/settings' ? "4px solid #28a745" : "4px solid transparent",
+              }}
+              onMouseEnter={(e) => {
+                if (location.pathname !== "/settings") {
+                  e.target.style.backgroundColor = "#34495e";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (location.pathname !== "/settings") {
+                  e.target.style.backgroundColor = "transparent";
+                }
+              }}
+            >
+              Settings
+            </button>
+            </>
           )}
         </nav>
-
+        
         {/* Logout button at bottom */}
         <div style={{ position: "absolute", bottom: 20, width: "100%", padding: "0 15px", boxSizing: "border-box" }}>
+
           <button
             onClick={handleLogout}
             style={{
@@ -453,6 +647,10 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
           >
             Logout
           </button>
+          <div style={{
+          fontSize: 12,
+          padding: "10px 0px"
+         }}>Made By: BORG Manila Cuties</div>
         </div>
       </aside>
 
@@ -482,20 +680,24 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
         `}</style>
         {/* Page content */}
         <div style={{ flex: 1 }}>
-          {currentPage === "profile" && (
-            <EmployeeProfile token={token} userId={userId} onProfileCompleted={handleProfileCompleted} />
-          )}
-          {currentPage === "users" && (
-            <Users token={token} userRole={userRole} />
-          )}
-          {currentPage === "upload" && (
-            <UploadReceipt token={token} userId={userId} />
-          )}
-          {currentPage === "approvals" && (
-            <HRApprovals token={token} />
-          )}
-          {currentPage === "managerReimbursements" && (
-            <ManagerReimbursements token={token} />
+          {checkingProfile ? (
+            <LoadingSpinner />
+          ) : (
+            <Routes>
+              <Route path="/" element={<Navigate to={hasEmployeeProfile ? "/dashboard" : "/profile"} replace />} />
+              <Route path="/profile" element={<EmployeeProfile token={token} userId={userId} onProfileCompleted={handleProfileCompleted} />} />
+              <Route path="/dashboard" element={hasEmployeeProfile ? <Dashboard token={token} userRole={userRole} userId={userId} /> : <Navigate to="/profile" replace />} />
+              <Route path="/users" element={hasEmployeeProfile ? <Users token={token} userRole={userRole} /> : <Navigate to="/profile" replace />} />
+              <Route path="/biometrics" element={hasEmployeeProfile ? (
+                <Biometrics token={token} userId={userId} userRole={userRole} />
+              ) : <Navigate to="/profile" replace />} />
+              <Route path="/leaves" element={hasEmployeeProfile ? <Leaves token={token} userId={userId} userRole={userRole} /> : <Navigate to="/profile" replace />} />
+              <Route path="/reimbursements" element={hasEmployeeProfile ? <UploadReceipt token={token} userId={userId} /> : <Navigate to="/profile" replace />} />
+              <Route path="/assets" element={hasEmployeeProfile ? <Assets token={token} /> : <Navigate to="/profile" replace />} />
+              <Route path="/approvals" element={hasEmployeeProfile && (userRole === 1 || userRole === 2) ? <HRApprovals token={token} /> : <Navigate to="/profile" replace />} />
+              <Route path="/manager-reimbursements" element={hasEmployeeProfile && userRole === 1 ? <ManagerReimbursements token={token} /> : <Navigate to="/profile" replace />} />
+              <Route path="/settings" element={userRole === 1 ? <Settings token={token} /> : <Navigate to="/profile" replace />} />
+            </Routes>
           )}
         </div>
       </main>

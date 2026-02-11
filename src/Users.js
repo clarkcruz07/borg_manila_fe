@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import LoadingSpinner from "./LoadingSpinner";
 
 function Users({ token, userRole }) {
   const [users, setUsers] = useState([]);
@@ -15,8 +16,8 @@ function Users({ token, userRole }) {
   const [submitting, setSubmitting] = useState(false);
   const [createdUserDetails, setCreatedUserDetails] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-//const API_BASE_URL = "http://localhost:5000";
-const API_BASE_URL = "https://borg-manila-be.onrender.com";
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener('resize', handleResize);
@@ -146,7 +147,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
   };
 
   if (loading) {
-    return <div style={{ padding: 20 }}>Loading employees list...</div>;
+    return <LoadingSpinner message="Loading employees..." />;
   }
 
   if (error) {
@@ -161,18 +162,24 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
   const canAddUsers = userRole === 1 || userRole === 2;
 
   return (
-    <div style={{ padding: isMobile ? 15 : 20 }}>
+    <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? 15 : 0 }}>
       <div style={{ 
         display: "flex", 
         justifyContent: "space-between", 
         alignItems: isMobile ? "flex-start" : "center", 
-        marginBottom: 20,
+        marginBottom: isMobile ? 20 : 30,
         flexDirection: isMobile ? "column" : "row",
         gap: isMobile ? 10 : 0
       }}>
         <div>
-          <h2 style={{ fontSize: isMobile ? 20 : 24, margin: 0, marginBottom: 5 }}>Employees List</h2>
-          <p style={{ margin: 0, fontSize: isMobile ? 14 : 16 }}>Total Employees: <strong>{users.length}</strong></p>
+          <h2 style={{  fontSize: isMobile ? 20 : 24 }}>Employees List</h2>
+
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(250px, 1fr))",
+            gap: isMobile ? 15 : 20
+          }}></div>
+          <p style={{ margin: 0, fontSize: isMobile ? 13 : 14 }}>Total Employees: <strong>{users.length}</strong></p>
         </div>
         {canAddUsers && (
           <button
@@ -200,20 +207,20 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
           backgroundColor: "#f9f9f9",
           border: "1px solid #ddd",
           borderRadius: 4,
-          padding: isMobile ? 15 : 20,
+          padding: isMobile ? 20 : 30,
           marginBottom: 20
         }}>
           <h3 style={{ fontSize: isMobile ? 18 : 20 }}>Add New Employee</h3>
           {formError && (
-            <div style={{ color: "red", marginBottom: 10, padding: 10, backgroundColor: "#f8d7da", borderRadius: 4, fontSize: isMobile ? 13 : 14 }}>
+            <div style={{ color: "red", marginBottom: 10, padding: isMobile ? 10 : 12, backgroundColor: "#f8d7da", borderRadius: 4, fontSize: isMobile ? 13 : 14 }}>
               {formError}
             </div>
           )}
           {formSuccess && (
-            <div style={{ color: "green", marginBottom: 10, padding: 10, backgroundColor: "#d4edda", borderRadius: 4, fontSize: isMobile ? 13 : 14 }}>
+            <div style={{ color: "green", marginBottom: 10, padding: isMobile ? 10 : 12, backgroundColor: "#d4edda", borderRadius: 4, fontSize: isMobile ? 13 : 14 }}>
               ✓ {formSuccess}
               {createdUserDetails && (
-                <div style={{ marginTop: 15, padding: isMobile ? 10 : 15, backgroundColor: "#fff", border: "1px solid #c3e6cb", borderRadius: 4 }}>
+                <div style={{ marginTop: 15, padding: isMobile ? 12 : 15, backgroundColor: "#fff", border: "1px solid #c3e6cb", borderRadius: 4 }}>
                   <strong style={{ fontSize: isMobile ? 14 : 16, display: "block", marginBottom: 10 }}>⚠️ Important: Save these credentials</strong>
                   <div style={{ marginBottom: 8, fontSize: isMobile ? 13 : 14 }}>
                     <strong>Email:</strong> {createdUserDetails.email}
@@ -386,109 +393,152 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
 
       {users.length === 0 ? (
         <p>No employees found</p>
-      ) : isMobile ? (
-        /* Mobile Card View */
-        <div style={{ display: "flex", flexDirection: "column", gap: 15, marginTop: 20 }}>
+      ) : (
+        /* Employee Cards View */
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(280px, 1fr))", 
+          gap: isMobile ? 15 : 20, 
+          marginTop: 20 
+        }}>
           {users.map((user, idx) => (
             <div key={idx} style={{
               backgroundColor: "#fff",
               border: "1px solid #ddd",
               borderRadius: 8,
-              padding: 15,
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-            }}>
-              <div style={{ marginBottom: 10 }}>
-                <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 5 }}>
-                  {user.firstName && user.lastName 
-                    ? `${user.lastName}, ${user.firstName}` 
-                    : <span style={{ color: "#999", fontStyle: "italic" }}>Profile not completed</span>
-                  }
-                </div>
-                <div style={{ fontSize: 14, color: "#666", marginBottom: 8 }}>
-                  {user.email}
-                </div>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                  <span style={{
-                    backgroundColor: user.role === 1 ? "#cfe2ff" : user.role === 2 ? "#fff3cd" : "#d1e7dd",
-                    color: user.role === 1 ? "#084298" : user.role === 2 ? "#664d03" : "#0f5132",
-                    padding: "4px 8px",
-                    borderRadius: 4,
-                    fontSize: 12,
-                    fontWeight: 600
+              padding: 20,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
+              cursor: "default"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-4px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+            }}
+            >
+              {/* Profile Picture */}
+              <div style={{ textAlign: "center", marginBottom: 15 }}>
+                {user.profilePicture ? (
+                  <img 
+                    src={user.profilePicture} 
+                    alt={`${user.firstName} ${user.lastName}`}
+                    style={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      border: "3px solid #007bff",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                    backgroundColor: "#e9ecef",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto",
+                    fontSize: 36,
+                    color: "#6c757d",
+                    border: "3px solid #dee2e6"
                   }}>
-                    {getRoleName(user.role)}
-                  </span>
-                  <span style={{
-                    backgroundColor: user.passwordChanged ? "#d4edda" : "#f8d7da",
-                    color: user.passwordChanged ? "#155724" : "#721c24",
-                    padding: "4px 8px",
-                    borderRadius: 4,
-                    fontSize: 12
-                  }}>
-                    Password: {user.passwordChanged ? "Changed" : "Not Changed"}
-                  </span>
-                </div>
-                <div style={{ fontSize: 12, color: "#999", marginTop: 8 }}>
-                  Created: {new Date(user.createdAt).toLocaleDateString()}
-                </div>
+                    👤
+                  </div>
+                )}
               </div>
+
+              {/* Name */}
+              <div style={{ 
+                textAlign: "center", 
+                fontWeight: 700, 
+                fontSize: 18, 
+                marginBottom: 8,
+                color: "#333"
+              }}>
+                {user.firstName && user.lastName 
+                  ? `${user.firstName} ${user.lastName}` 
+                  : <span style={{ color: "#999", fontStyle: "italic", fontSize: 14 }}>Profile not completed</span>
+                }
+              </div>
+
+              {/* Position */}
+              <div style={{ 
+                textAlign: "center", 
+                fontSize: 14, 
+                color: "#6c757d",
+                marginBottom: 8,
+                fontWeight: 500
+              }}>
+                {user.position || "—"}
+              </div>
+
+              {/* Email */}
+              <div style={{ 
+                textAlign: "center", 
+                fontSize: 13, 
+                color: "#007bff",
+                marginBottom: 8,
+                wordBreak: "break-word"
+              }}>
+                {user.email}
+              </div>
+
+              {/* Date Hired */}
+              <div style={{ 
+                textAlign: "center", 
+                fontSize: 12, 
+                color: "#6c757d",
+                marginBottom: 12
+              }}>
+                {user.dateHired 
+                  ? `Hired: ${new Date(user.dateHired).toLocaleDateString()}` 
+                  : "Hire date not set"}
+              </div>
+{/*
+              
+              <div style={{ textAlign: "center", marginBottom: 8 }}>
+                <span style={{
+                  backgroundColor: user.role === 1 ? "#cfe2ff" : user.role === 2 ? "#fff3cd" : "#d1e7dd",
+                  color: user.role === 1 ? "#084298" : user.role === 2 ? "#664d03" : "#0f5132",
+                  padding: "4px 12px",
+                  borderRadius: 12,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  display: "inline-block"
+                }}>
+                  {getRoleName(user.role)}
+                </span>
+              </div>
+
+              
+              <div style={{ 
+                display: "flex", 
+                justifyContent: "center", 
+                gap: 8, 
+                marginTop: 10,
+                flexWrap: "wrap"
+              }}>
+                <span style={{
+                  backgroundColor: user.passwordChanged ? "#d4edda" : "#f8d7da",
+                  color: user.passwordChanged ? "#155724" : "#721c24",
+                  padding: "3px 8px",
+                  borderRadius: 8,
+                  fontSize: 11,
+                  fontWeight: 500
+                }}>
+                  {user.passwordChanged ? "✓ Password Set" : "⚠ Password Pending"}
+                </span>
+              </div> */}
             </div>
           ))}
         </div>
-      ) : (
-        /* Desktop Table View */
-        <table style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          marginTop: 20
-        }}>
-          <thead>
-            <tr style={{ backgroundColor: "#f0f0f0" }}>
-              <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>Employee Name</th>
-              <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>Email</th>
-              <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>Role</th>
-              <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>Created At</th>
-              <th style={{ border: "1px solid #ddd", padding: 10, textAlign: "left" }}>Password Changed</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user, idx) => (
-              <tr key={idx}>
-                <td style={{ border: "1px solid #ddd", padding: 10 }}>
-                  {user.firstName && user.lastName 
-                    ? `${user.lastName}, ${user.firstName}` 
-                    : <span style={{ color: "#999", fontStyle: "italic" }}>Profile not completed</span>
-                  }
-                </td>
-                <td style={{ border: "1px solid #ddd", padding: 10 }}>{user.email}</td>
-                <td style={{ border: "1px solid #ddd", padding: 10 }}>
-                  <span style={{
-                    backgroundColor: user.role === 1 ? "#cfe2ff" : user.role === 2 ? "#fff3cd" : "#d1e7dd",
-                    color: user.role === 1 ? "#084298" : user.role === 2 ? "#664d03" : "#0f5132",
-                    padding: "4px 8px",
-                    borderRadius: 4,
-                    fontSize: 12
-                  }}>
-                    {getRoleName(user.role)}
-                  </span>
-                </td>
-                <td style={{ border: "1px solid #ddd", padding: 10 }}>
-                  {new Date(user.createdAt).toLocaleDateString()}
-                </td>
-                <td style={{ border: "1px solid #ddd", padding: 10 }}>
-                  <span style={{
-                    backgroundColor: user.passwordChanged ? "#d4edda" : "#f8d7da",
-                    color: user.passwordChanged ? "#155724" : "#721c24",
-                    padding: "4px 8px",
-                    borderRadius: 4
-                  }}>
-                    {user.passwordChanged ? "Yes" : "No"}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       )}
     </div>
   );

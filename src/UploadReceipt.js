@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { listReceipts, saveReceipt, uploadReceipt } from "./api";
+import { listReceipts, saveReceipt, uploadReceipt, getJobStatus, cancelJob } from "./api";
 
 function UploadReceipt({ token, userId }) {
   const [files, setFiles] = useState([]); // <-- multiple files
@@ -10,11 +10,14 @@ function UploadReceipt({ token, userId }) {
   const [savedLoading, setSavedLoading] = useState(false);
   const [savedError, setSavedError] = useState("");
   const [errorUpload, setErrorUpload] = useState("");
+  const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
+  const [pendingJobs, setPendingJobs] = useState([]); // Track jobs being polled
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const fileInputRef = useRef();      
   const cameraInputRef = useRef();    
   const abortControllerRef = useRef(null); // For canceling uploads
+  const pollingIntervalRef = useRef(null); // For job status polling
 
   // Handle mobile detection
   useEffect(() => {
@@ -25,11 +28,14 @@ function UploadReceipt({ token, userId }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Clean up abort controller on unmount or page refresh
+  // Clean up abort controller and polling on unmount or page refresh
   useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
+      }
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
       }
     };
   }, []);
@@ -56,12 +62,42 @@ function UploadReceipt({ token, userId }) {
   const handleFiles = (e) => {
     const selected = Array.from(e.target.files);
     setFiles((prev) => [...prev, ...selected]);
+    // Reset input value to allow re-uploading the same file
+    e.target.value = '';
   };
 
-  // Remove a specific receipt from the queue
-  const handleRemoveReceipt = (idx) => {
+  // Remove file from selection
+  const handleRemoveFile = async (idx) => {
+    // Check if this file has a pending/processing job
+    const jobForFile = pendingJobs.find(job => job.index === idx);
+    
+    // Also check if result has jobId (for completed jobs)
+    const resultWithJobId = results[idx]?.jobId;
+    const jobIdToCancel = jobForFile?.jobId || resultWithJobId;
+    
+    if (jobIdToCancel) {
+      // Cancel the job
+      try {
+        console.log(`Attempting to cancel job: ${jobIdToCancel}`);
+        await cancelJob(jobIdToCancel, token);
+        console.log(`Job ${jobIdToCancel} cancelled and files deleted`);
+        
+        // Remove from pending jobs
+        setPendingJobs(prev => prev.filter(j => j.jobId !== jobIdToCancel));
+      } catch (error) {
+        console.error("Failed to cancel job:", error);
+      }
+    } else {
+      console.log(`No job found for index ${idx}`);
+    }
+    
+    // Remove file and result
     setFiles(prev => prev.filter((_, i) => i !== idx));
     setResults(prev => prev.filter((_, i) => i !== idx));
+    
+    // Reset input values to allow re-uploading
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
   const submitReceipt = async () => {
@@ -69,6 +105,7 @@ function UploadReceipt({ token, userId }) {
 
     setLoading(true);
     setResults([]); // Clear previous results
+    setErrorUpload("");
 
     // Create new AbortController for this upload session
     abortControllerRef.current = new AbortController();
@@ -76,36 +113,115 @@ function UploadReceipt({ token, userId }) {
     try {
       // Initialize results array with placeholders
       setResults(new Array(files.length).fill(null));
+      setProcessingProgress({ current: 0, total: files.length });
 
-      // Process files sequentially to avoid hitting Mistral rate limits
+      const jobIds = [];
+
+      // Upload all files and get job IDs
       for (let idx = 0; idx < files.length; idx++) {
         const file = files[idx];
-        const res = await uploadReceipt(file, token, abortControllerRef.current.signal);
-        // attach original filename for save step
-        const normalized = {
-          ...res.data,
-          originalName: file?.name || res.data?.originalName || null,
-        };
         
-        // Update results as each completes
-        setResults(prev => {
-          const updated = [...prev];
-          updated[idx] = normalized;
-          return updated;
-        });
+        // Update progress
+        setProcessingProgress({ current: idx + 1, total: files.length });
+        
+        try {
+          const res = await uploadReceipt(file, token, abortControllerRef.current.signal);
+          jobIds.push({
+            jobId: res.data.jobId,
+            originalName: file.name,
+            index: idx
+          });
+        } catch (error) {
+          console.error(`Upload failed for file ${idx + 1}:`, error);
+          setResults(prev => {
+            const updated = [...prev];
+            updated[idx] = { error: error.message || "Upload failed" };
+            return updated;
+          });
+        }
       }
+
+      // Start polling for job results
+      if (jobIds.length > 0) {
+        setPendingJobs(jobIds);
+        startPolling(jobIds);
+      }
+
+      setErrorUpload(`Uploaded ${jobIds.length} file(s). Processing in background...`);
     } catch (err) {
       if (err.name === 'CanceledError' || err.code === 'ERR_CANCELED') {
         console.log("Upload canceled");
         setResults([]);
         setFiles([]);
+        setErrorUpload("");
       } else {
-        alert("Upload failed");
+        console.error("Upload error:", err);
+        setErrorUpload(err.message || "Upload failed");
       }
     } finally {
       setLoading(false);
+      setProcessingProgress({ current: 0, total: 0 });
       abortControllerRef.current = null;
     }
+  };
+
+  const startPolling = (jobIds) => {
+    // Clear any existing polling interval
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    const jobsToCheck = [...jobIds]; // Make a copy
+
+    // Poll every 2 seconds
+    pollingIntervalRef.current = setInterval(async () => {
+      // Check if there are still jobs to poll
+      if (jobsToCheck.length === 0) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+        setErrorUpload("");
+        return;
+      }
+
+      // Process each remaining job
+      for (let i = jobsToCheck.length - 1; i >= 0; i--) {
+        const job = jobsToCheck[i];
+        
+        try {
+          const res = await getJobStatus(job.jobId, token);
+          const jobData = res.data;
+
+          if (jobData.status === 'completed') {
+            // Update result with jobId
+            setResults(prev => {
+              const updated = [...prev];
+              updated[job.index] = { ...jobData.result, jobId: job.jobId };
+              return updated;
+            });
+
+            // Remove from pending jobs and tracking array
+            setPendingJobs(prev => prev.filter(j => j.jobId !== job.jobId));
+            jobsToCheck.splice(i, 1);
+            
+          } else if (jobData.status === 'failed') {
+            // Update with error
+            setResults(prev => {
+              const updated = [...prev];
+              updated[job.index] = { error: jobData.error || "Processing failed" };
+              return updated;
+            });
+
+            // Remove from pending jobs and tracking array
+            setPendingJobs(prev => prev.filter(j => j.jobId !== job.jobId));
+            jobsToCheck.splice(i, 1);
+          }
+          // If status is 'pending' or 'processing', keep polling
+        } catch (error) {
+          console.error(`Failed to get status for job ${job.jobId}:`, error);
+          // Keep job in array to retry
+        }
+      }
+    }, 2000);
   };
 
   const handleSaveAll = async () => {
@@ -128,6 +244,7 @@ function UploadReceipt({ token, userId }) {
               filePath: res.filePath,
               originalName: res.originalName,
               extracted: res.extracted,
+              jobId: res.jobId, // Pass jobId to delete after save
             },
             token
           );
@@ -220,12 +337,12 @@ function UploadReceipt({ token, userId }) {
   }, [savedReceipts]);
 
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-      <h2>Reimbursements</h2>
+    <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? 15 : 0 }}>
+      <h2 style={{ marginBottom: isMobile ? 20 : 30, fontSize: isMobile ? 20 : 24 }}>Reimbursements</h2>
 
       {/* Saved receipts accordion */}
       <div style={{ marginTop: 10, marginBottom: 20 }}>
-        <h3 style={{ margin: "0 0 10px 0" }}>Saved Receipts</h3>
+        <h3 style={{ margin: "0 0 10px 0", fontSize: isMobile ? 18 : 20 }}>Saved Receipts</h3>
         {savedLoading && <div style={{ color: "#666" }}>Loading saved receipts...</div>}
         {savedError && <div style={{ color: "#b00020" }}>{savedError}</div>}
 
@@ -289,6 +406,26 @@ function UploadReceipt({ token, userId }) {
         )}
       </div>
 
+      {/* Show selected files first if any */}
+      {files.length > 0 && (
+        <div style={{
+          backgroundColor: "#f8f9fa",
+          border: "1px solid #dee2e6",
+          borderRadius: 8,
+          padding: 15,
+          marginBottom: 20
+        }}>
+          <h4 style={{ margin: "0 0 10px 0", fontSize: 16 }}>Selected Files ({files.length})</h4>
+          <ul style={{ margin: 0, paddingLeft: 20 }}>
+            {files.map((f, idx) => (
+              <li key={idx} style={{ marginBottom: 5 }}>
+                {f.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Desktop upload */}
       {!isMobile && (
         <>
@@ -304,20 +441,37 @@ function UploadReceipt({ token, userId }) {
             onClick={() => fileInputRef.current.click()}
             style={{
               border: "2px dashed #007bff",
-              padding: 30,
+              padding: isMobile ? 20 : 40,
               cursor: "pointer",
               textAlign: "center",
-              marginBottom: 10,
+              marginBottom: 20,
+              borderRadius: 8,
+              backgroundColor: "#f0f8ff",
+              transition: "all 0.2s ease"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#e6f3ff";
+              e.currentTarget.style.borderColor = "#0056b3";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#f0f8ff";
+              e.currentTarget.style.borderColor = "#007bff";
             }}
           >
-            📁 Click to upload receipts
+            <div style={{ fontSize: 48, marginBottom: 10 }}>📁</div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: "#007bff" }}>
+              Click to select receipt images
+            </div>
+            <div style={{ fontSize: 14, color: "#6c757d", marginTop: 8 }}>
+              You can select multiple files at once
+            </div>
           </div>
         </>
       )}
 
       {/* Mobile: both upload and camera */}
       {isMobile && (
-        <div style={{ marginBottom: 10 }}>
+        <div style={{ marginBottom: 20, display: "flex", gap: 10, flexDirection: "column" }}>
           {/* Camera */}
           <input
             type="file"
@@ -329,9 +483,23 @@ function UploadReceipt({ token, userId }) {
           />
           <button
             onClick={() => cameraInputRef.current.click()}
-            style={{ marginRight: 10 }}
+            style={{
+              padding: "16px 20px",
+              backgroundColor: "#007bff",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10
+            }}
           >
-            📸 Take Photo
+            <span style={{ fontSize: 24 }}>📸</span>
+            Take Photo
           </button>
 
           {/* Upload from gallery */}
@@ -343,19 +511,65 @@ function UploadReceipt({ token, userId }) {
             hidden
             onChange={handleFiles}
           />
-          <button onClick={() => fileInputRef.current.click()}>📁 Upload</button>
+          <button
+            onClick={() => fileInputRef.current.click()}
+            style={{
+              padding: "16px 20px",
+              backgroundColor: "#28a745",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10
+            }}
+          >
+            <span style={{ fontSize: 24 }}>📁</span>
+            Choose from Gallery
+          </button>
         </div>
       )}
       
-      {/* Upload button */}
-      <button
-        onClick={submitReceipt}
-        disabled={!files.length || loading}
-        style={{ display: "block", marginTop: 10 }}
-      >
-        Upload Receipts
-      </button>
-      {errorUpload && <div style={{ backgroundColor: " rgb(231, 243, 255)", color: "#000", padding: "10px" }}>{errorUpload}</div>}
+      {/* Process button - only show when files are selected */}
+      {files.length > 0 && (
+        <button
+          onClick={submitReceipt}
+          disabled={loading}
+          style={{
+            display: "block",
+            width: "100%",
+            marginBottom: 20,
+            padding: "16px 24px",
+            backgroundColor: loading ? "#6c757d" : "#dc3545",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            cursor: loading ? "not-allowed" : "pointer",
+            fontSize: 18,
+            fontWeight: "bold",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
+          }}
+        >
+          {loading ? "Processing..." : `Process ${files.length} Receipt${files.length > 1 ? 's' : ''}`}
+        </button>
+      )}
+      
+      {errorUpload && (
+        <div style={{
+          backgroundColor: "#e7f3ff",
+          color: "#000",
+          padding: "12px 16px",
+          borderRadius: 8,
+          marginBottom: 20,
+          border: "1px solid #b3d9ff"
+        }}>
+          {errorUpload}
+        </div>
+      )}
       {/* Full-page loader */}
       {loading && (
         <div style={{
@@ -377,7 +591,16 @@ function UploadReceipt({ token, userId }) {
             height: 50,
             animation: "spin 1s linear infinite"
           }}></div>
-          <p style={{ marginTop: 10 }}>Uploading and processing receipts...</p>
+          <p style={{ marginTop: 10, textAlign: "center" }}>
+            {processingProgress.total > 0 
+              ? `Uploading ${processingProgress.current} of ${processingProgress.total}...`
+              : "Uploading receipts..."}
+          </p>
+          {pendingJobs.length > 0 && (
+            <p style={{ fontSize: 14, marginTop: 5, color: "#bbb", textAlign: "center" }}>
+              {pendingJobs.length} receipt(s) processing in background...
+            </p>
+          )}
           <style>{`
             @keyframes spin {
               0% { transform: rotate(0deg); }
@@ -409,9 +632,9 @@ function UploadReceipt({ token, userId }) {
                 minHeight: isMobile ? 200 : 250,
                 position: "relative"
               }}>
-                {/* Remove button */}
+                {/* Remove button at top right */}
                 <button
-                  onClick={() => handleRemoveReceipt(idx)}
+                  onClick={() => handleRemoveFile(idx)}
                   style={{
                     position: "absolute",
                     top: 10,
@@ -420,18 +643,17 @@ function UploadReceipt({ token, userId }) {
                     color: "#fff",
                     border: "none",
                     borderRadius: 4,
-                    padding: isMobile ? "4px 10px" : "6px 12px",
+                    padding: "6px 12px",
                     cursor: "pointer",
-                    fontSize: isMobile ? 11 : 12,
-                    fontWeight: 600,
+                    fontSize: 12,
+                    fontWeight: "600",
+                    zIndex: 1
                   }}
-                  title="Remove this receipt"
                 >
                   ✕ Remove
                 </button>
-                
                 <div>
-                  <h4 style={{ marginTop: 0, marginBottom: 15, fontSize: isMobile ? 15 : 16 }}>Receipt #{idx + 1}</h4>
+                  <h4 style={{ marginTop: 0, marginBottom: 15, fontSize: isMobile ? 15 : 16, paddingRight: 80 }}>Receipt #{idx + 1}</h4>
                   {res ? (
                     <>
                       <p style={{ margin: "8px 0", fontSize: isMobile ? 13 : 14 }}><strong>Shop:</strong> {res.extracted.shopName || "Not found"}</p>
@@ -474,16 +696,6 @@ function UploadReceipt({ token, userId }) {
             </div>
           )}
         </>
-      )}
-
-      {/* Show selected files */}
-      {files.length > 0 && (
-        <div style={{ marginTop: 10 }}>
-          <p>Selected Files:</p>
-          <ul>
-            {files.map((f, idx) => <li key={idx}>{f.name}</li>)}
-          </ul>
-        </div>
       )}
     </div>
   );

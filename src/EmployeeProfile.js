@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import LoadingSpinner from "./LoadingSpinner";
 
 function EmployeeProfile({ token, userId, onProfileCompleted }) {
   const [formData, setFormData] = useState({
@@ -14,6 +15,8 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
     position: "",
     company: "",
     department: "",
+    dateHired: "",
+    profilePicture: "",
     sssNumber: "",
     philhealthNumber: "",
     tinNumber: "",
@@ -21,16 +24,18 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
   });
 
   const [departments, setDepartments] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [approvalStatus, setApprovalStatus] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-
-  //const API_BASE_URL = "http://localhost:5000";
-const API_BASE_URL = "https://borg-manila-be.onrender.com";
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
   const isApproved = approvalStatus === 1;
+  const isRejected = approvalStatus === -1;
 
   // Handle mobile detection
   useEffect(() => {
@@ -60,17 +65,24 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch departments (now requires JWT)
-        const deptResponse = await fetch(
-          `${API_BASE_URL}/api/employee/departments`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        setInitialLoading(true);
+        // Fetch departments and companies (now requires JWT)
+        const [deptResponse, companyResponse] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/employee/departments`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${API_BASE_URL}/api/admin/companies`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+        
         const deptData = await deptResponse.json();
         setDepartments(deptData);
+        
+        if (companyResponse.ok) {
+          const companyData = await companyResponse.json();
+          setCompanies(companyData);
+        }
 
         // Fetch existing employee profile
         if (token) {
@@ -100,28 +112,139 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
               position: profileData.position || "",
               company: profileData.company || "",
               department: profileData.department || "",
+              dateHired: profileData.dateHired
+                ? new Date(profileData.dateHired).toISOString().split("T")[0]
+                : "",
+              profilePicture: profileData.profilePicture || "",
               sssNumber: profileData.sssNumber || "",
               philhealthNumber: profileData.philhealthNumber || "",
               tinNumber: profileData.tinNumber || "",
               pagibigNumber: profileData.pagibigNumber || "",
             });
             setApprovalStatus(profileData.approval_status);
+            setRejectionReason(profileData.rejectionReason || "");
           }
         }
       } catch (err) {
         console.error("Error fetching data:", err);
+      } finally {
+        setInitialLoading(false);
       }
     };
 
     fetchData();
   }, [token]);
 
+  const formatGovernmentId = (name, value) => {
+    // Remove all non-digits
+    const digits = value.replace(/\D/g, "");
+    
+    switch (name) {
+      case "sssNumber":
+        // Format: XX-XXXXXXX-X (2-7-1)
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 9) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+        return `${digits.slice(0, 2)}-${digits.slice(2, 9)}-${digits.slice(9, 10)}`;
+      
+      case "philhealthNumber":
+        // Format: XX-XXXXXXXXX-X (2-9-1)
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 11) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+        return `${digits.slice(0, 2)}-${digits.slice(2, 11)}-${digits.slice(11, 12)}`;
+      
+      case "tinNumber":
+        // Format: XXX-XXX-XXX-XXX (3-3-3-3)
+        if (digits.length <= 3) return digits;
+        if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+        if (digits.length <= 9) return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+        return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 9)}-${digits.slice(9, 12)}`;
+      
+      case "pagibigNumber":
+        // Format: XXXX-XXXX-XXXX (4-4-4)
+        if (digits.length <= 4) return digits;
+        if (digits.length <= 8) return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+        return `${digits.slice(0, 4)}-${digits.slice(4, 8)}-${digits.slice(8, 12)}`;
+      
+      default:
+        return value;
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Apply formatting for government IDs
+    const formattedValue = ["sssNumber", "philhealthNumber", "tinNumber", "pagibigNumber"].includes(name)
+      ? formatGovernmentId(name, value)
+      : value;
+    
     setFormData({
       ...formData,
-      [name]: value,
+      [name]: formattedValue,
     });
+  };
+
+  const handleProfilePictureChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError("Please select an image file");
+        return;
+      }
+      
+      // Validate file size (max 500KB for reasonable upload size)
+      if (file.size > 500 * 1024) {
+        setError("Image size should be less than 500KB. Please resize your image.");
+        return;
+      }
+
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const newProfilePicture = reader.result;
+        
+        // If profile is approved, update only the profile picture
+        if (isApproved) {
+          setLoading(true);
+          setError("");
+          try {
+            const response = await fetch(`${API_BASE_URL}/api/employee/profile/picture`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ profilePicture: newProfilePicture }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+              throw new Error(data.error);
+            }
+
+            setFormData({
+              ...formData,
+              profilePicture: newProfilePicture
+            });
+            setSuccess(true);
+            setTimeout(() => setSuccess(false), 3000);
+          } catch (err) {
+            setError(err.message);
+          } finally {
+            setLoading(false);
+          }
+        } else {
+          // If profile is not approved, just update the form data
+          setFormData({
+            ...formData,
+            profilePicture: newProfilePicture
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -162,6 +285,10 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
     }
   };
 
+  if (initialLoading) {
+    return <LoadingSpinner message="Loading profile..." />;
+  }
+
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? 15 : 0 }}>
       <div style={{ marginBottom: isMobile ? 20 : 30 }}>
@@ -190,7 +317,29 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
           <strong>Approval Status:</strong> ⏳ Pending Approval
         </div>
       )}
-
+      {isRejected && (
+        <div
+          style={{
+            backgroundColor: "#f8d7da",
+            color: "#721c24",
+            padding: isMobile ? 12 : 15,
+            borderRadius: 4,
+            marginBottom: 20,
+            border: "1px solid #f5c6cb",
+            fontSize: isMobile ? 13 : 14
+          }}
+        >
+          <div style={{ fontWeight: "bold", marginBottom: 8 }}>
+            ✕ Profile Rejected
+          </div>
+          <div style={{ marginBottom: 8 }}>
+            <strong>Reason:</strong> {rejectionReason}
+          </div>
+          <div style={{ fontSize: isMobile ? 12 : 13, fontStyle: "italic" }}>
+            Please update your profile based on the feedback above and resubmit.
+          </div>
+        </div>
+      )}
 
       {error && (
         <div
@@ -238,6 +387,70 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
             Personal Information
           </h3>
 
+          {/* Profile Picture Upload */}
+          <div style={{ marginBottom: 30, textAlign: "center" }}>
+            <div style={{ marginBottom: 15 }}>
+              {formData.profilePicture ? (
+                <img 
+                  src={formData.profilePicture} 
+                  alt="Profile" 
+                  style={{
+                    width: isMobile ? 100 : 120,
+                    height: isMobile ? 100 : 120,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    border: "3px solid #007bff",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: isMobile ? 100 : 120,
+                  height: isMobile ? 100 : 120,
+                  borderRadius: "50%",
+                  backgroundColor: "#e9ecef",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto",
+                  fontSize: 48,
+                  color: "#6c757d"
+                }}>
+                  👤
+                </div>
+              )}
+            </div>
+            <div>
+              <label style={{
+                display: "inline-block",
+                padding: "8px 16px",
+                backgroundColor: "#007bff",
+                color: "#fff",
+                borderRadius: 4,
+                cursor: (!isApproved && approvalStatus === 0 && !isRejected) ? "not-allowed" : "pointer",
+                fontSize: isMobile ? 13 : 14,
+                opacity: (!isApproved && approvalStatus === 0 && !isRejected) ? 0.5 : 1
+              }}>
+                {formData.profilePicture ? "Change Picture" : "Upload Picture"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePictureChange}
+                  disabled={!isApproved && approvalStatus === 0 && !isRejected}
+                  style={{ display: "none" }}
+                />
+              </label>
+              <p style={{ fontSize: isMobile ? 11 : 12, color: "#6c757d", marginTop: 8 }}>
+                Max size: 500KB. Formats: JPG, PNG, GIF
+              </p>
+              {isApproved && (
+                <p style={{ fontSize: isMobile ? 11 : 12, color: "#28a745", marginTop: 4, fontStyle: "italic" }}>
+                  ✓ You can update your profile picture anytime
+                </p>
+              )}
+            </div>
+          </div>
+
           <div style={{ 
             display: "grid", 
             gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", 
@@ -258,7 +471,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleChange}
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   required
                   style={{
                     width: "100%",
@@ -286,7 +499,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleChange}
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   required
                   style={{
                     width: "100%",
@@ -313,7 +526,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                   type="date"
                   name="birthDate"
                   value={formData.birthDate}
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   onChange={handleChange}
                   required
                   style={{
@@ -341,7 +554,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                   type="email"
                   name="personalEmail"
                   value={formData.personalEmail}
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   onChange={handleChange}
                   required
                   style={{
@@ -380,7 +593,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                 <input
                   type="tel"
                   name="mobileNumber"
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   value={formData.mobileNumber}
                   onChange={handleChange}
                   required
@@ -407,7 +620,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
               ) : (
                 <input
                   type="text"
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   name="homeAddress"
                   value={formData.homeAddress}
                   onChange={handleChange}
@@ -447,7 +660,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
               ) : (
                 <input
                   type="text"
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   name="emergencyContactName"
                   value={formData.emergencyContactName}
                   onChange={handleChange}
@@ -474,7 +687,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                 </div>
               ) : (
                 <input
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   type="text"
                   name="relationship"
                   value={formData.relationship}
@@ -502,7 +715,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                 </div>
               ) : (
                 <input
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   type="tel"
                   name="emergencyContactNumber"
                   value={formData.emergencyContactNumber}
@@ -546,7 +759,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                   name="position"
                   value={formData.position}
                   onChange={handleChange}
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   required
                   style={{
                     width: "100%",
@@ -569,12 +782,11 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                   {formData.company || "—"}
                 </div>
               ) : (
-                <input
-                  type="text"
+                <select
                   name="company"
                   value={formData.company}
                   onChange={handleChange}
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   required
                   style={{
                     width: "100%",
@@ -583,8 +795,16 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                     borderRadius: 4,
                     fontSize: 14,
                     boxSizing: "border-box",
+                    backgroundColor: "#fff",
                   }}
-                />
+                >
+                  <option value="">Select a company</option>
+                  {companies.map((company) => (
+                    <option key={company._id} value={company.name}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
               )}
             </div>
 
@@ -601,7 +821,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                   name="department"
                   value={formData.department}
                   onChange={handleChange}
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   required
                   style={{
                     width: "100%",
@@ -620,6 +840,35 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                     </option>
                   ))}
                 </select>
+              )}
+            </div>
+
+            <div>
+              <label style={{ display: "block", marginBottom: 8, fontWeight: 500 }}>
+                Date Hired
+              </label>
+              {isApproved ? (
+                <div style={readOnlyValueStyle}>
+                  {formData.dateHired 
+                    ? new Date(formData.dateHired).toLocaleDateString()
+                    : "—"}
+                </div>
+              ) : (
+                <input
+                  type="date"
+                  name="dateHired"
+                  value={formData.dateHired}
+                  onChange={handleChange}
+                  disabled={approvalStatus === 0 && !isRejected}
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    border: "1px solid #ddd",
+                    borderRadius: 4,
+                    fontSize: 14,
+                    boxSizing: "border-box",
+                  }}
+                />
               )}
             </div>
           </div>
@@ -649,7 +898,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                   name="sssNumber"
                   value={formData.sssNumber}
                   onChange={handleChange}
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   placeholder="XX-XXXXXXX-X"
                   style={{
                     width: "100%",
@@ -677,7 +926,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                   name="philhealthNumber"
                   value={formData.philhealthNumber}
                   onChange={handleChange}
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   placeholder="XX-XXXXXXXXX-X"
                   style={{
                     width: "100%",
@@ -705,7 +954,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                   name="tinNumber"
                   value={formData.tinNumber}
                   onChange={handleChange}
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   placeholder="XXX-XXX-XXX-XXX"
                   style={{
                     width: "100%",
@@ -733,7 +982,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
                   name="pagibigNumber"
                   value={formData.pagibigNumber}
                   onChange={handleChange}
-                  disabled={approvalStatus === 0}
+                  disabled={approvalStatus === 0 && !isRejected}
                   placeholder="XXXX-XXXX-XXXX"
                   style={{
                     width: "100%",
@@ -753,20 +1002,20 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
             <div style={{ marginTop: 30 }}>
               <button
                 type="submit"
-                disabled={loading || approvalStatus === 0}
+                disabled={loading || (approvalStatus === 0 && !isRejected)}
                 style={{
                   padding: "12px 30px",
-                  backgroundColor: loading || approvalStatus === 0 ? "#ccc" : "#CD1543",
+                  backgroundColor: loading || (approvalStatus === 0 && !isRejected) ? "#ccc" : "#CD1543",
                   color: "#fff",
                   border: "none",
                   borderRadius: 4,
                   fontSize: 14,
                   fontWeight: "bold",
-                  cursor: loading || approvalStatus === 0 ? "not-allowed" : "pointer",
-                  opacity: loading || approvalStatus === 0 ? 0.6 : 1,
+                  cursor: loading || (approvalStatus === 0 && !isRejected) ? "not-allowed" : "pointer",
+                  opacity: loading || (approvalStatus === 0 && !isRejected) ? 0.6 : 1,
                 }}
               >
-                {loading ? "Saving..." : approvalStatus === 0 ? "Pending Approval" : "Save Profile"}
+                {loading ? "Saving..." : (approvalStatus === 0 && !isRejected) ? "Pending Approval" : isRejected ? "Resubmit Profile" : "Save Profile"}
               </button>
             </div>
           )}
@@ -777,3 +1026,4 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
 }
 
 export default EmployeeProfile;
+

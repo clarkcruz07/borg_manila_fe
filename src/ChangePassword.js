@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import borgImg from "./assets/imgs/borg_img.jpg";
 function ChangePassword({ onPasswordChanged, token, userId }) {
   const [newPassword, setNewPassword] = useState("");
@@ -6,10 +6,15 @@ function ChangePassword({ onPasswordChanged, token, userId }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-
-  // Use the same backend base URL as Login
-  //const API_BASE_URL = "http://localhost:5000";
-  const API_BASE_URL = "https://borg-manila-be.onrender.com";
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
   const handleChangePassword = async (e) => {
     e.preventDefault();
     setError("");
@@ -64,11 +69,12 @@ function ChangePassword({ onPasswordChanged, token, userId }) {
       justifyContent: "center",
       alignItems: "center",
       minHeight: "100vh",
-      backgroundColor: "#f5f5f5"
+      backgroundColor: "#f5f5f5",
+      padding: isMobile ? 15 : 20
     }}>
       <div style={{
         backgroundColor: "#fff",
-        padding: 40,
+        padding: isMobile ? 20 : 30,
         borderRadius: 8,
         boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
         width: "100%",
@@ -85,8 +91,8 @@ function ChangePassword({ onPasswordChanged, token, userId }) {
             }}
           />
         </div>
-        <h2 style={{ textAlign: "left", marginBottom: 10 }}>Change Password</h2>
-        <p style={{ textAlign: "left", color: "#3d3d3d", marginBottom: 30 }}>
+        <h2 style={{ textAlign: "left", marginBottom: 10, fontSize: isMobile ? 20 : 24 }}>Change Password</h2>
+        <p style={{ textAlign: "left", color: "#3d3d3d", marginBottom: isMobile ? 20 : 30, fontSize: isMobile ? 13 : 14 }}>
           For first time account, the password should change once logged in.
         </p>
 
@@ -94,21 +100,10 @@ function ChangePassword({ onPasswordChanged, token, userId }) {
           <div style={{
             backgroundColor: "#f8d7da",
             color: "#721c24",
-            padding: 10,
+            padding: isMobile ? 10 : 12,
             borderRadius: 4,
-            marginBottom: 15
-          }}>
-            {error}
-          </div>
-        )}
-
-        {error && !success && (
-          <div style={{
-            backgroundColor: "#f8d7da",
-            color: "#721c24",
-            padding: 10,
-            borderRadius: 4,
-            marginBottom: 15
+            marginBottom: 15,
+            fontSize: isMobile ? 13 : 14
           }}>
             {error}
           </div>
@@ -116,7 +111,7 @@ function ChangePassword({ onPasswordChanged, token, userId }) {
 
         <form onSubmit={handleChangePassword}>
           <div style={{ marginBottom: 15, display: success ? "none" : "block" }}>
-            <label style={{ display: "block", marginBottom: 5 }}>New Password</label>
+            <label style={{ display: "block", marginBottom: 5, fontSize: isMobile ? 13 : 14 }}>New Password</label>
             <input
               type="password"
               value={newPassword}
@@ -124,17 +119,17 @@ function ChangePassword({ onPasswordChanged, token, userId }) {
               required
               style={{
                 width: "100%",
-                padding: 10,
+                padding: isMobile ? "8px 10px" : "10px 12px",
                 border: "1px solid #ddd",
                 borderRadius: 4,
-                fontSize: 14,
+                fontSize: isMobile ? 13 : 14,
                 boxSizing: "border-box"
               }}
             />
           </div>
 
           <div style={{ marginBottom: 20, display: success ? "none" : "block" }}>
-            <label style={{ display: "block", marginBottom: 5 }}>Confirm Password</label>
+            <label style={{ display: "block", marginBottom: 5, fontSize: isMobile ? 13 : 14 }}>Confirm Password</label>
             <input
               type="password"
               value={confirmPassword}
@@ -142,10 +137,10 @@ function ChangePassword({ onPasswordChanged, token, userId }) {
               required
               style={{
                 width: "100%",
-                padding: 10,
+                padding: isMobile ? "8px 10px" : "10px 12px",
                 border: "1px solid #ddd",
                 borderRadius: 4,
-                fontSize: 14,
+                fontSize: isMobile ? 13 : 14,
                 boxSizing: "border-box"
               }}
             />
@@ -156,12 +151,12 @@ function ChangePassword({ onPasswordChanged, token, userId }) {
             disabled={loading}
             style={{
               width: "100%",
-              padding: 10,
+              padding: isMobile ? "10px" : "12px",
               backgroundColor: success ? "#28a745" : "#CD1543",
               color: "#fff",
               border: "none",
               borderRadius: 4,
-              fontSize: 14,
+              fontSize: isMobile ? 13 : 14,
               cursor: loading ? "not-allowed" : "pointer",
               opacity: loading ? 0.6 : 1,
               transition: "all 0.3s ease"

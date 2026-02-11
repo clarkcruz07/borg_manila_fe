@@ -6,10 +6,7 @@ function Login({ onLoginSuccess }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // NOTE: For local dev/testing. Consider moving to an env var (REACT_APP_API_BASE_URL).
- //const API_BASE_URL = "http://localhost:5000";
-const API_BASE_URL = "https://borg-manila-be.onrender.com";
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -67,11 +64,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
             }}
           />
         </div>
-        {/*}
-        <h2 style={{ textAlign: "center", marginBottom: 30 }}>
-          Login
-        </h2>
-          */}
+        
         {error && (
           <div style={{
             backgroundColor: "#f8d7da",

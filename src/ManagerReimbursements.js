@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
+import LoadingSpinner from "./LoadingSpinner";
 
 function ManagerReimbursements({ token }) {
   const [startDate, setStartDate] = useState("");
@@ -11,8 +12,8 @@ function ManagerReimbursements({ token }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedUsers, setExpandedUsers] = useState(new Set());
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-//const API_BASE_URL = "http://localhost:5000";
-const API_BASE_URL = "https://borg-manila-be.onrender.com";
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+  
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -387,7 +388,7 @@ const API_BASE_URL = "https://borg-manila-be.onrender.com";
       )}
 
       {/* Grouped Results by User */}
-      {loading && <div style={{ textAlign: "center", padding: 40 }}>Loading receipts...</div>}
+      {loading && <LoadingSpinner message="Loading receipts..." />}
       
       {!loading && receipts.length === 0 && startDate && endDate && (
         <div style={{ textAlign: "center", padding: 40, color: "#666" }}>
