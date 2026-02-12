@@ -380,9 +380,6 @@ function HRApprovals({ token }) {
                         <strong>Company:</strong> {employee.company}
                       </div>
                       <div>
-                        <strong>Department:</strong> {employee.department}
-                      </div>
-                      <div>
                         <strong>Personal Email:</strong> {employee.personalEmail}
                       </div>
                       <div>
@@ -547,9 +544,6 @@ function HRApprovals({ token }) {
                       </div>
                       <div>
                         <strong>Position:</strong> {leave.employeeId?.position}
-                      </div>
-                      <div>
-                        <strong>Department:</strong> {leave.employeeId?.department}
                       </div>
                       <div>
                         <strong>Leave Type:</strong>{" "}

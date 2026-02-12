@@ -90,8 +90,7 @@ function AppContent() {
                             profileData.birthDate && 
                             profileData.personalEmail && 
                             profileData.mobileNumber && 
-                            profileData.position && 
-                            profileData.department);
+                            profileData.position);
           const isApproved = profileData.approval_status === 1;
           const hasProfile = isComplete && isApproved;
           

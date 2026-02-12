@@ -18,7 +18,6 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
     emergencyContactNumber: "",
     position: "",
     company: "",
-    department: "",
     dateHired: "",
     profilePicture: "",
     sssNumber: "",
@@ -27,7 +26,6 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
     pagibigNumber: "",
   });
 
-  const [departments, setDepartments] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -65,23 +63,15 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
     lineHeight: "20px",
   };
 
-  // Fetch departments and existing profile
+  // Fetch existing profile
   useEffect(() => {
     const fetchData = async () => {
       try {
         setInitialLoading(true);
-        // Fetch departments and companies (now requires JWT)
-        const [deptResponse, companyResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/employee/departments`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`${API_BASE_URL}/api/admin/companies`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-        
-        const deptData = await deptResponse.json();
-        setDepartments(deptData);
+        // Fetch companies (now requires JWT)
+        const companyResponse = await fetch(`${API_BASE_URL}/api/admin/companies`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         
         if (companyResponse.ok) {
           const companyData = await companyResponse.json();
@@ -115,7 +105,6 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
               emergencyContactNumber: profileData.emergencyContactNumber || "",
               position: profileData.position || "",
               company: profileData.company || "",
-              department: profileData.department || "",
               dateHired: profileData.dateHired
                 ? new Date(profileData.dateHired).toISOString().split("T")[0]
                 : "",
@@ -861,42 +850,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
 
             <div>
               <label style={{ display: "block", marginBottom: 8, fontWeight: 500 }}>
-                Department *
-              </label>
-              {isApproved ? (
-                <div style={readOnlyValueStyle}>
-                  {formData.department || "—"}
-                </div>
-              ) : (
-                <select
-                  name="department"
-                  value={formData.department}
-                  onChange={handleChange}
-                  disabled={approvalStatus === 0 && !isRejected}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: 10,
-                    border: "1px solid #ddd",
-                    borderRadius: 4,
-                    fontSize: 14,
-                    boxSizing: "border-box",
-                    backgroundColor: "#fff",
-                  }}
-                >
-                  <option value="">Select a department</option>
-                  {departments.map((dept) => (
-                    <option key={dept._id} value={dept.name}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            <div>
-              <label style={{ display: "block", marginBottom: 8, fontWeight: 500 }}>
-                Date Hired
+                Date Hired *
               </label>
               {isApproved ? (
                 <div style={readOnlyValueStyle}>
@@ -911,6 +865,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
                   value={formData.dateHired}
                   onChange={handleChange}
                   disabled={approvalStatus === 0 && !isRejected}
+                  required
                   style={{
                     width: "100%",
                     padding: 10,
@@ -937,7 +892,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
           }}>
             <div>
               <label style={{ display: "block", marginBottom: 8, fontWeight: 500 }}>
-                SSS Number
+                SSS Number *
               </label>
               {isApproved ? (
                 <div style={readOnlyValueStyle}>
@@ -951,6 +906,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
                   onChange={handleChange}
                   disabled={approvalStatus === 0 && !isRejected}
                   placeholder="XX-XXXXXXX-X"
+                  required
                   style={{
                     width: "100%",
                     padding: 10,
@@ -965,7 +921,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
 
             <div>
               <label style={{ display: "block", marginBottom: 8, fontWeight: 500 }}>
-                PhilHealth Number
+                PhilHealth Number *
               </label>
               {isApproved ? (
                 <div style={readOnlyValueStyle}>
@@ -979,6 +935,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
                   onChange={handleChange}
                   disabled={approvalStatus === 0 && !isRejected}
                   placeholder="XX-XXXXXXXXX-X"
+                  required
                   style={{
                     width: "100%",
                     padding: 10,
@@ -993,7 +950,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
 
             <div>
               <label style={{ display: "block", marginBottom: 8, fontWeight: 500 }}>
-                TIN Number
+                TIN Number *
               </label>
               {isApproved ? (
                 <div style={readOnlyValueStyle}>
@@ -1007,6 +964,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
                   onChange={handleChange}
                   disabled={approvalStatus === 0 && !isRejected}
                   placeholder="XXX-XXX-XXX-XXX"
+                  required
                   style={{
                     width: "100%",
                     padding: 10,
@@ -1021,7 +979,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
 
             <div>
               <label style={{ display: "block", marginBottom: 8, fontWeight: 500 }}>
-                Pag-IBIG HDMF Number
+                Pag-IBIG HDMF Number *
               </label>
               {isApproved ? (
                 <div style={readOnlyValueStyle}>
@@ -1035,6 +993,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
                   onChange={handleChange}
                   disabled={approvalStatus === 0 && !isRejected}
                   placeholder="XXXX-XXXX-XXXX"
+                  required
                   style={{
                     width: "100%",
                     padding: 10,

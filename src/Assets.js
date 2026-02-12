@@ -612,7 +612,6 @@ function Assets({ token }) {
                         <h3 style={{ margin: "0 0 5px 0", fontSize: isMobile ? 16 : 18 }}>{request.assetType}</h3>
                         <div style={{ fontSize: isMobile ? 13 : 14, color: "#6c757d" }}>
                           Requested by: {request.requestedBy?.firstName} {request.requestedBy?.lastName}
-                          {request.requestedBy?.department && ` (${request.requestedBy.department})`}
                         </div>
                         <div style={{ fontSize: isMobile ? 11 : 12, color: "#6c757d", marginTop: 5 }}>
                           {new Date(request.createdAt).toLocaleDateString()}
