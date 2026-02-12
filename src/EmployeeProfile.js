@@ -906,6 +906,8 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
                   onChange={handleChange}
                   disabled={approvalStatus === 0 && !isRejected}
                   placeholder="XX-XXXXXXX-X"
+                  pattern="\d{2}-\d{7}-\d{1}"
+                  title="SSS Number must follow format XX-XXXXXXX-X"
                   required
                   style={{
                     width: "100%",
@@ -935,6 +937,8 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
                   onChange={handleChange}
                   disabled={approvalStatus === 0 && !isRejected}
                   placeholder="XX-XXXXXXXXX-X"
+                  pattern="\d{2}-\d{9}-\d{1}"
+                  title="PhilHealth Number must follow format XX-XXXXXXXXX-X"
                   required
                   style={{
                     width: "100%",
@@ -964,6 +968,8 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
                   onChange={handleChange}
                   disabled={approvalStatus === 0 && !isRejected}
                   placeholder="XXX-XXX-XXX-XXX"
+                  pattern="\d{3}-\d{3}-\d{3}-\d{3}"
+                  title="TIN Number must follow format XXX-XXX-XXX-XXX"
                   required
                   style={{
                     width: "100%",
@@ -993,6 +999,8 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
                   onChange={handleChange}
                   disabled={approvalStatus === 0 && !isRejected}
                   placeholder="XXXX-XXXX-XXXX"
+                  pattern="\d{4}-\d{4}-\d{4}"
+                  title="Pag-IBIG Number must follow format XXXX-XXXX-XXXX"
                   required
                   style={{
                     width: "100%",

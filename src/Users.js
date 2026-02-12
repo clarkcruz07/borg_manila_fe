@@ -17,6 +17,13 @@ function Users({ token, userRole }) {
   const [createdUserDetails, setCreatedUserDetails] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({});
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [editSuccess, setEditSuccess] = useState("");
+  const [companies, setCompanies] = useState([]);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
   
   useEffect(() => {
@@ -47,8 +54,24 @@ function Users({ token, userRole }) {
     }
   };
 
+  const fetchCompanies = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/companies`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCompanies(data);
+      }
+    } catch (err) {
+      console.error('Error fetching companies:', err);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchCompanies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -137,6 +160,140 @@ function Users({ token, userRole }) {
       handleCloseForm();
     }
   };
+
+  const handleViewEmployee = async (user) => {
+    try {
+      // Fetch full employee details
+      const response = await fetch(`${API_BASE_URL}/api/employee/profile/${user._id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch employee details");
+      }
+
+      const employeeData = await response.json();
+      setSelectedEmployee(employeeData);
+      setEditFormData({
+        firstName: employeeData.firstName || "",
+        lastName: employeeData.lastName || "",
+        birthDate: employeeData.birthDate ? new Date(employeeData.birthDate).toISOString().split("T")[0] : "",
+        personalEmail: employeeData.personalEmail || "",
+        mobileNumber: employeeData.mobileNumber || "",
+        homeAddress: employeeData.homeAddress || "",
+        emergencyContactName: employeeData.emergencyContactName || "",
+        relationship: employeeData.relationship || "",
+        emergencyContactNumber: employeeData.emergencyContactNumber || "",
+        position: employeeData.position || "",
+        company: employeeData.company || "",
+        department: employeeData.department || "",
+        dateHired: employeeData.dateHired ? new Date(employeeData.dateHired).toISOString().split("T")[0] : "",
+        sssNumber: employeeData.sssNumber || "",
+        philhealthNumber: employeeData.philhealthNumber || "",
+        tinNumber: employeeData.tinNumber || "",
+        pagibigNumber: employeeData.pagibigNumber || "",
+      });
+      setEditModalOpen(true);
+      setEditError("");
+      setEditSuccess("");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const formatGovernmentId = (name, value) => {
+    // Remove all non-digits
+    const digits = value.replace(/\D/g, "");
+    
+    switch (name) {
+      case "sssNumber":
+        // Format: XX-XXXXXXX-X (2-7-1)
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 9) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+        return `${digits.slice(0, 2)}-${digits.slice(2, 9)}-${digits.slice(9, 10)}`;
+      
+      case "philhealthNumber":
+        // Format: XX-XXXXXXXXX-X (2-9-1)
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 11) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+        return `${digits.slice(0, 2)}-${digits.slice(2, 11)}-${digits.slice(11, 12)}`;
+      
+      case "tinNumber":
+        // Format: XXX-XXX-XXX-XXX (3-3-3-3)
+        if (digits.length <= 3) return digits;
+        if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+        if (digits.length <= 9) return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+        return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 9)}-${digits.slice(9, 12)}`;
+      
+      case "pagibigNumber":
+        // Format: XXXX-XXXX-XXXX (4-4-4)
+        if (digits.length <= 4) return digits;
+        if (digits.length <= 8) return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+        return `${digits.slice(0, 4)}-${digits.slice(4, 8)}-${digits.slice(8, 12)}`;
+      
+      default:
+        return value;
+    }
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Apply formatting for government IDs
+    const formattedValue = ["sssNumber", "philhealthNumber", "tinNumber", "pagibigNumber"].includes(name)
+      ? formatGovernmentId(name, value)
+      : value;
+    
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: formattedValue
+    }));
+  };
+
+  const handleUpdateEmployee = async (e) => {
+    e.preventDefault();
+    setEditError("");
+    setEditSuccess("");
+    setEditLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/employee/profile/${selectedEmployee._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(editFormData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error);
+      }
+
+      setEditSuccess("Employee profile updated successfully!");
+      setTimeout(() => {
+        setEditModalOpen(false);
+        fetchUsers();
+      }, 1500);
+    } catch (err) {
+      setEditError(err.message);
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleCloseEditModal = () => {
+    setEditModalOpen(false);
+    setSelectedEmployee(null);
+    setEditFormData({});
+    setEditError("");
+    setEditSuccess("");
+  };
+
 
   const handleRegeneratePassword = () => {
     setFormData({ ...formData, password: generateRandomPassword() });
@@ -445,8 +602,9 @@ function Users({ token, userRole }) {
               padding: 20,
               boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
               transition: "transform 0.2s ease, box-shadow 0.2s ease",
-              cursor: "default"
+              cursor: "pointer"
             }}
+            onClick={() => handleViewEmployee(user)}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "translateY(-4px)";
               e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
@@ -586,6 +744,427 @@ function Users({ token, userRole }) {
               </div> */}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Edit Employee Modal */}
+      {editModalOpen && selectedEmployee && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1000,
+          padding: isMobile ? 10 : 20,
+          overflow: "auto"
+        }}>
+          <div style={{
+            backgroundColor: "#fff",
+            borderRadius: 8,
+            padding: isMobile ? 20 : 30,
+            maxWidth: 800,
+            width: "100%",
+            maxHeight: "90vh",
+            overflow: "auto",
+            position: "relative"
+          }}>
+            <h2 style={{ marginTop: 0, marginBottom: 20, fontSize: isMobile ? 20 : 24 }}>Edit Employee Profile</h2>
+
+            {editError && (
+              <div style={{
+                backgroundColor: "#f8d7da",
+                color: "#721c24",
+                padding: 12,
+                borderRadius: 4,
+                marginBottom: 15,
+                fontSize: 14
+              }}>
+                {editError}
+              </div>
+            )}
+
+            {editSuccess && (
+              <div style={{
+                backgroundColor: "#d4edda",
+                color: "#155724",
+                padding: 12,
+                borderRadius: 4,
+                marginBottom: 15,
+                fontSize: 14
+              }}>
+                {editSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateEmployee}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 15, marginBottom: 20 }}>
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>First Name *</label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={editFormData.firstName}
+                    onChange={handleEditChange}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>Last Name *</label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={editFormData.lastName}
+                    onChange={handleEditChange}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>Birth Date *</label>
+                  <input
+                    type="date"
+                    name="birthDate"
+                    value={editFormData.birthDate}
+                    onChange={handleEditChange}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>Personal Email *</label>
+                  <input
+                    type="email"
+                    name="personalEmail"
+                    value={editFormData.personalEmail}
+                    onChange={handleEditChange}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>Mobile Number *</label>
+                  <input
+                    type="tel"
+                    name="mobileNumber"
+                    value={editFormData.mobileNumber}
+                    onChange={handleEditChange}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>Home Address *</label>
+                  <input
+                    type="text"
+                    name="homeAddress"
+                    value={editFormData.homeAddress}
+                    onChange={handleEditChange}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>Emergency Contact Name *</label>
+                  <input
+                    type="text"
+                    name="emergencyContactName"
+                    value={editFormData.emergencyContactName}
+                    onChange={handleEditChange}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>Relationship *</label>
+                  <input
+                    type="text"
+                    name="relationship"
+                    value={editFormData.relationship}
+                    onChange={handleEditChange}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>Emergency Contact Number *</label>
+                  <input
+                    type="tel"
+                    name="emergencyContactNumber"
+                    value={editFormData.emergencyContactNumber}
+                    onChange={handleEditChange}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>Position *</label>
+                  <input
+                    type="text"
+                    name="position"
+                    value={editFormData.position}
+                    onChange={handleEditChange}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>Company *</label>
+                  <select
+                    name="company"
+                    value={editFormData.company}
+                    onChange={handleEditChange}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box",
+                      backgroundColor: "#fff"
+                    }}
+                  >
+                    <option value="">Select a company</option>
+                    {companies.map((company) => (
+                      <option key={company._id} value={company.name}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>Date Hired *</label>
+                  <input
+                    type="date"
+                    name="dateHired"
+                    value={editFormData.dateHired}
+                    onChange={handleEditChange}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>SSS Number *</label>
+                  <input
+                    type="text"
+                    name="sssNumber"
+                    value={editFormData.sssNumber}
+                    onChange={handleEditChange}
+                    required
+                    placeholder="XX-XXXXXXX-X"
+                    pattern="\d{2}-\d{7}-\d{1}"
+                    title="SSS Number must follow format XX-XXXXXXX-X"
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>PhilHealth Number *</label>
+                  <input
+                    type="text"
+                    name="philhealthNumber"
+                    value={editFormData.philhealthNumber}
+                    onChange={handleEditChange}
+                    required
+                    placeholder="XX-XXXXXXXXX-X"
+                    pattern="\d{2}-\d{9}-\d{1}"
+                    title="PhilHealth Number must follow format XX-XXXXXXXXX-X"
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>TIN Number *</label>
+                  <input
+                    type="text"
+                    name="tinNumber"
+                    value={editFormData.tinNumber}
+                    onChange={handleEditChange}
+                    required
+                    placeholder="XXX-XXX-XXX-XXX"
+                    pattern="\d{3}-\d{3}-\d{3}-\d{3}"
+                    title="TIN Number must follow format XXX-XXX-XXX-XXX"
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>Pag-IBIG Number *</label>
+                  <input
+                    type="text"
+                    name="pagibigNumber"
+                    value={editFormData.pagibigNumber}
+                    onChange={handleEditChange}
+                    required
+                    placeholder="XXXX-XXXX-XXXX"
+                    pattern="\d{4}-\d{4}-\d{4}"
+                    title="Pag-IBIG Number must follow format XXXX-XXXX-XXXX"
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 14,
+                      boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+                <button
+                  type="button"
+                  onClick={handleCloseEditModal}
+                  disabled={editLoading}
+                  style={{
+                    padding: "10px 20px",
+                    backgroundColor: "#6c757d",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 4,
+                    fontSize: 14,
+                    fontWeight: "bold",
+                    cursor: editLoading ? "not-allowed" : "pointer",
+                    opacity: editLoading ? 0.6 : 1
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  style={{
+                    padding: "10px 20px",
+                    backgroundColor: editLoading ? "#ccc" : "#dc3545",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 4,
+                    fontSize: 14,
+                    fontWeight: "bold",
+                    cursor: editLoading ? "not-allowed" : "pointer"
+                  }}
+                >
+                  {editLoading ? "Updating..." : "Update Profile"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

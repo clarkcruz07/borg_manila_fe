@@ -337,7 +337,14 @@ function AppContent() {
           boxSizing: "border-box"
         }}>
         <div style={{ padding: "20px", borderBottom: "1px solid #fff", marginBottom: 20 }}>
-         
+          <img
+          src="/borg-white-red.png"
+          alt="Borg HCMS"
+          style={{ height: 28, width: "auto", objectFit: "contain" }}
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
           <p style={{ margin: 0, fontSize: 12, color: "#bdc3c7" }}>Logged in as: {currentUser}</p>
         </div>
 
@@ -360,35 +367,6 @@ function AppContent() {
 
         {/* Navigation buttons */}
         <nav style={{ padding: "0 15px" }}>
-          <button
-            onClick={() => { navigate('/profile'); setSidebarOpen(false); }}
-            style={{
-              width: "100%",
-              padding: "12px 15px",
-              backgroundColor: location.pathname === '/profile' ? COLOR_NAV_ACTIVE : "transparent",
-              color: "#fff",
-              border: "none",
-              borderRadius: 4,
-              cursor: "pointer",
-              marginBottom: 10,
-              fontSize: 14,
-              textAlign: "left",
-              transition: "all 0.3s ease",
-              borderLeft: location.pathname === '/profile' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent"
-            }}
-            onMouseEnter={(e) => {
-              if (location.pathname !== '/profile') {
-                e.target.style.backgroundColor = "#34495e";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (location.pathname !== '/profile') {
-                e.target.style.backgroundColor = "transparent";
-              }
-            }}
-          >
-            My Profile
-          </button>
           <button
             onClick={() => { if (hasEmployeeProfile) { navigate('/dashboard'); setSidebarOpen(false); } }}
             disabled={!hasEmployeeProfile}
@@ -419,6 +397,35 @@ function AppContent() {
             }}
           >
               Dashboard {!hasEmployeeProfile && "🔒"}
+          </button>
+          <button
+            onClick={() => { navigate('/profile'); setSidebarOpen(false); }}
+            style={{
+              width: "100%",
+              padding: "12px 15px",
+              backgroundColor: location.pathname === '/profile' ? COLOR_NAV_ACTIVE : "transparent",
+              color: "#fff",
+              border: "none",
+              borderRadius: 4,
+              cursor: "pointer",
+              marginBottom: 10,
+              fontSize: 14,
+              textAlign: "left",
+              transition: "all 0.3s ease",
+              borderLeft: location.pathname === '/profile' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent"
+            }}
+            onMouseEnter={(e) => {
+              if (location.pathname !== '/profile') {
+                e.target.style.backgroundColor = "#34495e";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (location.pathname !== '/profile') {
+                e.target.style.backgroundColor = "transparent";
+              }
+            }}
+          >
+            My Profile
           </button>
           <button
             onClick={() => { if (hasEmployeeProfile) { navigate('/users'); setSidebarOpen(false); } }}
