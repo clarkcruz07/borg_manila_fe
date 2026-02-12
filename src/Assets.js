@@ -60,7 +60,7 @@ function Assets({ token }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [filterStatus, setFilterStatus] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);

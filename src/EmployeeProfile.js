@@ -34,7 +34,7 @@ function EmployeeProfile({ token, userId, onProfileCompleted }) {
   const [approvalStatus, setApprovalStatus] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
   const isApproved = approvalStatus === 1;
   const isRejected = approvalStatus === -1;

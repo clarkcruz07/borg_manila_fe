@@ -24,7 +24,7 @@ function Users({ token, userRole }) {
   const [editError, setEditError] = useState("");
   const [editSuccess, setEditSuccess] = useState("");
   const [companies, setCompanies] = useState([]);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
   
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);

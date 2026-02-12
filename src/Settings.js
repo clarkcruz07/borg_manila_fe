@@ -18,7 +18,7 @@ function Settings({ token }) {
   const [deptForm, setDeptForm] = useState({ name: "", description: "" });
   const [companyForm, setCompanyForm] = useState({ name: "", description: "" });
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);

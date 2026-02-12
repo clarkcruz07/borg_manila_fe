@@ -12,7 +12,7 @@ function HRApprovals({ token }) {
   const [rejectionReason, setRejectionReason] = useState("");
   const [success, setSuccess] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_UR || process.env.REACT_APP_API_BASE_URL;
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
