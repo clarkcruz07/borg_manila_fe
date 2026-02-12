@@ -26,7 +26,6 @@ function Dashboard({ token, userRole, userId }) {
   const [isTrackingLocation, setIsTrackingLocation] = useState(false);
   const [clockInStatus, setClockInStatus] = useState(null);
   const [workMode, setWorkMode] = useState('Office');
-  const [capturedImage, setCapturedImage] = useState(null);
   const [showCamera, setShowCamera] = useState(false);
   const videoRef = useRef(null);
   const [stream, setStream] = useState(null);
@@ -191,7 +190,6 @@ function Dashboard({ token, userRole, userId }) {
       ctx.drawImage(videoRef.current, 0, 0);
       
       canvas.toBlob((blob) => {
-        setCapturedImage(blob);
         stopCamera();
         
         if (pendingAction === 'clock-in') {
@@ -290,13 +288,11 @@ function Dashboard({ token, userRole, userId }) {
       setLastClockIn(new Date(response.data.timestamp).toLocaleString());
       setClockInStatus(`✅ ${response.data.message}\nTime: ${new Date(response.data.timestamp).toLocaleString()}`);
       
-      setCapturedImage(null);
       setLoadingStep(null);
     } catch (err) {
       console.error('Clock in error:', err);
       const errorMsg = err.response?.data?.error || 'Failed to clock in';
       alert(`❌ ${errorMsg}`);
-      setCapturedImage(null);
       setLoadingStep(null);
     }
   };
@@ -338,13 +334,11 @@ function Dashboard({ token, userRole, userId }) {
       const clockOutTime = new Date(response.data.timestamp).toLocaleString();
       setClockInStatus(`✅ ${response.data.message}\nTime: ${clockOutTime}\nDuration: ${response.data.duration} minutes`);
       
-      setCapturedImage(null);
       setLoadingStep(null);
     } catch (err) {
       console.error('Clock out error:', err);
       const errorMsg = err.response?.data?.error || 'Failed to clock out';
       alert(`❌ ${errorMsg}`);
-      setCapturedImage(null);
       setLoadingStep(null);
     }
   };
