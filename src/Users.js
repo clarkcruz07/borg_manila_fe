@@ -162,6 +162,10 @@ function Users({ token, userRole }) {
   };
 
   const handleViewEmployee = async (user) => {
+    if (!(userRole === 1 || userRole === 2)) {
+      // Do nothing for role 3
+      return;
+    }
     try {
       // Fetch full employee details
       const response = await fetch(`${API_BASE_URL}/api/employee/profile/${user._id}`, {
@@ -801,7 +805,8 @@ function Users({ token, userRole }) {
               </div>
             )}
 
-            <form onSubmit={handleUpdateEmployee}>
+            {(userRole === 1 || userRole === 2) ? (
+              <form onSubmit={handleUpdateEmployee}>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 15, marginBottom: 20 }}>
                 <div>
                   <label style={{ display: "block", marginBottom: 5, fontWeight: 500, fontSize: 14 }}>First Name *</label>
@@ -1163,7 +1168,12 @@ function Users({ token, userRole }) {
                   {editLoading ? "Updating..." : "Update Profile"}
                 </button>
               </div>
-            </form>
+              </form>
+            ) : (
+              <div style={{ color: '#888', fontSize: 15, textAlign: 'center', marginTop: 30 }}>
+                You do not have permission to edit employee profiles.
+              </div>
+            )}
           </div>
         </div>
       )}
