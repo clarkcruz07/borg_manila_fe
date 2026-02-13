@@ -12,7 +12,6 @@ function Leaves({ token, userId, userRole }) {
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
-  // Leave application form
   const [formData, setFormData] = useState({
     leaveType: "vacation",
     startDate: "",
@@ -21,9 +20,7 @@ function Leaves({ token, userId, userRole }) {
   });
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -77,7 +74,7 @@ function Leaves({ token, userId, userRole }) {
     const end = new Date(formData.endDate);
     let count = 0;
     let currentDate = new Date(start);
-    
+
     while (currentDate <= end) {
       const dayOfWeek = currentDate.getDay();
       if (dayOfWeek !== 0 && dayOfWeek !== 6) {
@@ -85,7 +82,7 @@ function Leaves({ token, userId, userRole }) {
       }
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     return count;
   };
 
@@ -159,17 +156,22 @@ function Leaves({ token, userId, userRole }) {
     return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
-      day: "numeric"
+      day: "numeric",
     });
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "approved": return "#28a745";
-      case "rejected": return "#dc3545";
-      case "pending": return "#ffc107";
-      case "cancelled": return "#6c757d";
-      default: return "#6c757d";
+      case "approved":
+        return "#28a745";
+      case "rejected":
+        return "#dc3545";
+      case "pending":
+        return "#ffc107";
+      case "cancelled":
+        return "#6c757d";
+      default:
+        return "#6c757d";
     }
   };
 
@@ -181,7 +183,7 @@ function Leaves({ token, userId, userRole }) {
       borderRadius: 12,
       fontSize: isMobile ? 11 : 12,
       fontWeight: "500",
-      display: "inline-block"
+      display: "inline-block",
     };
   };
 
@@ -191,9 +193,10 @@ function Leaves({ token, userId, userRole }) {
 
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? 15 : 0 }}>
-      <h2 style={{ marginBottom: isMobile ? 20 : 30, fontSize: isMobile ? 20 : 24 }}>Leave Management</h2>
+      <h2 style={{ marginBottom: isMobile ? 20 : 30, fontSize: isMobile ? 20 : 24 }}>
+        Leave Management
+      </h2>
 
-      {/* Leave Balance Card */}
       {leaveBalance && (
         <div
           style={{
@@ -202,7 +205,7 @@ function Leaves({ token, userId, userRole }) {
             padding: isMobile ? 20 : 30,
             marginBottom: 20,
             boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-            borderTop: "4px solid #28a745"
+            borderTop: "4px solid #28a745",
           }}
         >
           <h3 style={{ marginTop: 0, marginBottom: 20, fontSize: isMobile ? 18 : 20 }}>
@@ -211,45 +214,38 @@ function Leaves({ token, userId, userRole }) {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : "repeat(4, 1fr)",
-              gap: isMobile ? 15 : 20
+              gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)",
+              gap: isMobile ? 15 : 20,
             }}
           >
             <div>
               <div style={{ fontSize: isMobile ? 11 : 12, color: "#6c757d", marginBottom: 5 }}>
-                Total Credits
-              </div>
-              <div style={{ fontSize: isMobile ? 28 : 36, fontWeight: "bold", color: "#dc3545" }}>
-                {leaveBalance.totalCredits}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: isMobile ? 11 : 12, color: "#6c757d", marginBottom: 5 }}>
-                Used
-              </div>
-              <div style={{ fontSize: isMobile ? 28 : 36, fontWeight: "bold", color: "#dc3545" }}>
-                {leaveBalance.usedCredits}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: isMobile ? 11 : 12, color: "#6c757d", marginBottom: 5 }}>
-                Available
+                Vacation Leave
               </div>
               <div style={{ fontSize: isMobile ? 28 : 36, fontWeight: "bold", color: "#28a745" }}>
-                {leaveBalance.availableCredits}
+                {leaveBalance.vacation?.availableCredits ?? 0}
+              </div>
+              <div style={{ fontSize: isMobile ? 12 : 13, color: "#6c757d" }}>
+                {leaveBalance.vacation?.usedCredits ?? 0} used / {leaveBalance.vacation?.totalCredits ?? 0} total
               </div>
             </div>
             <div>
               <div style={{ fontSize: isMobile ? 11 : 12, color: "#6c757d", marginBottom: 5 }}>
-                Months Employed
+                Sick Leave
               </div>
-              <div style={{ fontSize: isMobile ? 28 : 36, fontWeight: "bold", color: "#6c757d" }}>
-                {leaveBalance.monthsEmployed}
+              <div style={{ fontSize: isMobile ? 28 : 36, fontWeight: "bold", color: "#28a745" }}>
+                {leaveBalance.sick?.availableCredits ?? 0}
+              </div>
+              <div style={{ fontSize: isMobile ? 12 : 13, color: "#6c757d" }}>
+                {leaveBalance.sick?.usedCredits ?? 0} used / {leaveBalance.sick?.totalCredits ?? 0} total
               </div>
             </div>
           </div>
-          <p style={{ marginTop: 15, marginBottom: 0, fontSize: isMobile ? 12 : 13, color: "#6c757d", fontStyle: "italic" }}>
-            📅 You earn 1 leave credit per month. Hired on: {leaveBalance.dateHired ? formatDate(leaveBalance.dateHired) : "N/A"}
+          <p style={{ marginTop: 15, marginBottom: 0, fontSize: isMobile ? 12 : 13, color: "#6c757d" }}>
+            Months employed: {leaveBalance.monthsEmployed ?? 0}. Eligible after 6 months: {leaveBalance.eligibleToUse ? "Yes" : "No"}.
+          </p>
+          <p style={{ marginTop: 6, marginBottom: 0, fontSize: isMobile ? 12 : 13, color: "#6c757d", fontStyle: "italic" }}>
+            You earn 1 leave credit per month per type. Leaves filed before 6 months are deducted and applied once eligible. Hired on: {leaveBalance.dateHired ? formatDate(leaveBalance.dateHired) : "N/A"}
           </p>
         </div>
       )}
@@ -263,7 +259,7 @@ function Leaves({ token, userId, userRole }) {
             borderRadius: 4,
             marginBottom: 20,
             border: "1px solid #f5c6cb",
-            fontSize: isMobile ? 13 : 14
+            fontSize: isMobile ? 13 : 14,
           }}
         >
           {error}
@@ -279,14 +275,13 @@ function Leaves({ token, userId, userRole }) {
             borderRadius: 4,
             marginBottom: 20,
             border: "1px solid #c3e6cb",
-            fontSize: isMobile ? 13 : 14
+            fontSize: isMobile ? 13 : 14,
           }}
         >
           {success}
         </div>
       )}
 
-      {/* Tabs */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", gap: 10, borderBottom: "2px solid #e9ecef" }}>
           <button
@@ -299,7 +294,7 @@ function Leaves({ token, userId, userRole }) {
               color: activeTab === "apply" ? "#dc3545" : "#6c757d",
               fontWeight: activeTab === "apply" ? "600" : "normal",
               cursor: "pointer",
-              fontSize: isMobile ? 13 : 14
+              fontSize: isMobile ? 13 : 14,
             }}
           >
             Apply for Leave
@@ -314,7 +309,7 @@ function Leaves({ token, userId, userRole }) {
               color: activeTab === "myLeaves" ? "#dc3545" : "#6c757d",
               fontWeight: activeTab === "myLeaves" ? "600" : "normal",
               cursor: "pointer",
-              fontSize: isMobile ? 13 : 14
+              fontSize: isMobile ? 13 : 14,
             }}
           >
             My Leaves
@@ -322,19 +317,16 @@ function Leaves({ token, userId, userRole }) {
         </div>
       </div>
 
-      {/* Apply for Leave Tab */}
       {activeTab === "apply" && (
         <div
           style={{
             backgroundColor: "#fff",
             borderRadius: 8,
             padding: isMobile ? 20 : 30,
-            boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
+            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
           }}
         >
-          <h3 style={{ marginTop: 0, marginBottom: 20, fontSize: isMobile ? 18 : 22 }}>
-            Apply for Leave
-          </h3>
+          <h3 style={{ marginTop: 0, marginBottom: 20, fontSize: isMobile ? 18 : 22 }}>Apply for Leave</h3>
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: 20 }}>
               <label style={{ display: "block", marginBottom: 8, fontWeight: "500", fontSize: isMobile ? 13 : 14 }}>
@@ -351,14 +343,11 @@ function Leaves({ token, userId, userRole }) {
                   border: "1px solid #ddd",
                   borderRadius: 4,
                   fontSize: isMobile ? 13 : 14,
-                  boxSizing: "border-box"
+                  boxSizing: "border-box",
                 }}
               >
                 <option value="vacation">Vacation Leave</option>
                 <option value="sick">Sick Leave</option>
-                <option value="emergency">Emergency Leave</option>
-                <option value="personal">Personal Leave</option>
-                <option value="other">Other</option>
               </select>
             </div>
 
@@ -367,7 +356,7 @@ function Leaves({ token, userId, userRole }) {
                 display: "grid",
                 gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
                 gap: isMobile ? 15 : 20,
-                marginBottom: 20
+                marginBottom: 20,
               }}
             >
               <div>
@@ -386,11 +375,10 @@ function Leaves({ token, userId, userRole }) {
                     border: "1px solid #ddd",
                     borderRadius: 4,
                     fontSize: isMobile ? 13 : 14,
-                    boxSizing: "border-box"
+                    boxSizing: "border-box",
                   }}
                 />
               </div>
-
               <div>
                 <label style={{ display: "block", marginBottom: 8, fontWeight: "500", fontSize: isMobile ? 13 : 14 }}>
                   End Date *
@@ -407,7 +395,7 @@ function Leaves({ token, userId, userRole }) {
                     border: "1px solid #ddd",
                     borderRadius: 4,
                     fontSize: isMobile ? 13 : 14,
-                    boxSizing: "border-box"
+                    boxSizing: "border-box",
                   }}
                 />
               </div>
@@ -420,7 +408,7 @@ function Leaves({ token, userId, userRole }) {
                   padding: isMobile ? 10 : 12,
                   borderRadius: 4,
                   marginBottom: 20,
-                  fontSize: isMobile ? 13 : 14
+                  fontSize: isMobile ? 13 : 14,
                 }}
               >
                 Business days: <strong>{calculateDays()}</strong> day(s)
@@ -444,7 +432,7 @@ function Leaves({ token, userId, userRole }) {
                   borderRadius: 4,
                   fontSize: isMobile ? 13 : 14,
                   boxSizing: "border-box",
-                  resize: "vertical"
+                  resize: "vertical",
                 }}
                 placeholder="Please provide a reason for your leave..."
               />
@@ -460,7 +448,7 @@ function Leaves({ token, userId, userRole }) {
                 borderRadius: 4,
                 cursor: "pointer",
                 fontSize: isMobile ? 14 : 16,
-                fontWeight: "500"
+                fontWeight: "500",
               }}
             >
               Submit Leave Application
@@ -469,19 +457,16 @@ function Leaves({ token, userId, userRole }) {
         </div>
       )}
 
-      {/* My Leaves Tab */}
       {activeTab === "myLeaves" && (
         <div
           style={{
             backgroundColor: "#fff",
             borderRadius: 8,
             padding: isMobile ? 15 : 30,
-            boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
+            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
           }}
         >
-          <h3 style={{ marginTop: 0, marginBottom: 20, fontSize: isMobile ? 18 : 22 }}>
-            My Leave Applications
-          </h3>
+          <h3 style={{ marginTop: 0, marginBottom: 20, fontSize: isMobile ? 18 : 22 }}>My Leave Applications</h3>
           {leaves.length === 0 ? (
             <p style={{ color: "#6c757d", fontSize: isMobile ? 13 : 14 }}>No leave applications yet.</p>
           ) : (
@@ -502,12 +487,10 @@ function Leaves({ token, userId, userRole }) {
                         {leave.leaveType.charAt(0).toUpperCase() + leave.leaveType.slice(1)} Leave
                       </div>
                       <div style={{ fontSize: isMobile ? 12 : 13, color: "#6c757d" }}>
-                        {formatDate(leave.startDate)} - {formatDate(leave.endDate)} ({leave.numberOfDays} day{leave.numberOfDays > 1 ? 's' : ''})
+                        {formatDate(leave.startDate)} - {formatDate(leave.endDate)} ({leave.numberOfDays} day{leave.numberOfDays > 1 ? "s" : ""})
                       </div>
                     </div>
-                    <div style={getStatusBadge(leave.status)}>
-                      {leave.status.toUpperCase()}
-                    </div>
+                    <div style={getStatusBadge(leave.status)}>{leave.status.toUpperCase()}</div>
                   </div>
                   <div style={{ fontSize: isMobile ? 12 : 13, color: "#333", marginBottom: 10 }}>
                     <strong>Reason:</strong> {leave.reason}
@@ -528,7 +511,7 @@ function Leaves({ token, userId, userRole }) {
                         borderRadius: 4,
                         cursor: "pointer",
                         fontSize: isMobile ? 12 : 13,
-                        marginTop: 10
+                        marginTop: 10,
                       }}
                     >
                       Cancel

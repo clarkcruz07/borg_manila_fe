@@ -870,14 +870,30 @@ function Dashboard({ token, userRole, userId }) {
               borderTop: "4px solid #28a745"
             }}>
               <div style={cardTitleStyle}>Leave Credits</div>
-              <div>
-                <div style={{ ...cardValueStyle, color: "#28a745" }}>
-                  {leaveBalance ? leaveBalance.availableCredits : "-"}
+              {leaveBalance ? (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div>
+                    <div style={{ ...cardSubtitleStyle, color: "#6c757d" }}>Vacation</div>
+                    <div style={{ ...cardValueStyle, color: "#28a745" }}>
+                      {leaveBalance.vacation?.availableCredits ?? 0}
+                    </div>
+                    <div style={cardSubtitleStyle}>
+                      {leaveBalance.vacation?.usedCredits ?? 0} used / {leaveBalance.vacation?.totalCredits ?? 0} total
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ ...cardSubtitleStyle, color: "#6c757d" }}>Sick</div>
+                    <div style={{ ...cardValueStyle, color: "#28a745" }}>
+                      {leaveBalance.sick?.availableCredits ?? 0}
+                    </div>
+                    <div style={cardSubtitleStyle}>
+                      {leaveBalance.sick?.usedCredits ?? 0} used / {leaveBalance.sick?.totalCredits ?? 0} total
+                    </div>
+                  </div>
                 </div>
-                <div style={cardSubtitleStyle}>
-                  {leaveBalance ? `${leaveBalance.usedCredits} used / ${leaveBalance.totalCredits} total` : "Available"}
-                </div>
-              </div>
+              ) : (
+                <div style={cardSubtitleStyle}>Available</div>
+              )}
             </div>
 
             {/* My Receipts This Month */}

@@ -340,7 +340,9 @@ function BiometricsMonitor({ token }) {
                     <td style={{ padding: 12 }}>{new Date(record.timestamp).toLocaleString()}</td>
                     
                     <td style={{ padding: 12, fontSize: 12, color: "#6c757d" }}>
-                      {record.location.latitude.toFixed(6)}, {record.location.longitude.toFixed(6)}
+                      {record.location && typeof record.location.latitude === "number" && typeof record.location.longitude === "number"
+                        ? `${record.location.latitude.toFixed(6)}, ${record.location.longitude.toFixed(6)}`
+                        : "Location unavailable"}
                     </td>
                   </tr>
                 ))}
