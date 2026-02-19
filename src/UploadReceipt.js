@@ -2,6 +2,61 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { listReceipts, saveReceipt, uploadReceipt, getJobStatus, cancelJob } from "./api";
 
 const MAX_UPLOAD_FILES = 5;
+const MAX_UPLOAD_FILE_SIZE_BYTES = 4 * 1024 * 1024;
+const MAX_IMAGE_DIMENSION = 1600;
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), type, quality);
+  });
+}
+
+async function compressImageForUpload(file) {
+  if (!file || !file.type || !file.type.startsWith("image/")) return file;
+
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Failed to read image"));
+      img.src = objectUrl;
+    });
+
+    const sourceWidth = image.width;
+    const sourceHeight = image.height;
+    const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(sourceWidth, sourceHeight));
+    const targetWidth = Math.max(1, Math.round(sourceWidth * scale));
+    const targetHeight = Math.max(1, Math.round(sourceHeight * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+    const qualities = [0.82, 0.72, 0.62, 0.52];
+    let chosenBlob = null;
+    for (const quality of qualities) {
+      const blob = await canvasToBlob(canvas, "image/jpeg", quality);
+      if (!blob) continue;
+      chosenBlob = blob;
+      if (blob.size <= MAX_UPLOAD_FILE_SIZE_BYTES) break;
+    }
+
+    if (!chosenBlob) return file;
+    if (chosenBlob.size >= file.size && file.size <= MAX_UPLOAD_FILE_SIZE_BYTES) return file;
+
+    const compressedName = `${file.name.replace(/\.[^/.]+$/, "")}.jpg`;
+    return new File([chosenBlob], compressedName, { type: "image/jpeg" });
+  } catch {
+    return file;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
 
 function UploadReceipt({ token, userId }) {
   const [files, setFiles] = useState([]); // <-- multiple files
@@ -146,17 +201,27 @@ function UploadReceipt({ token, userId }) {
         setProcessingProgress({ current: idx + 1, total: files.length });
         
         try {
-          const res = await uploadReceipt(file, token, abortControllerRef.current.signal);
+          const compressedFile = await compressImageForUpload(file);
+          if (compressedFile.size > MAX_UPLOAD_FILE_SIZE_BYTES) {
+            throw new Error("File is still too large after compression. Please crop or lower resolution.");
+          }
+
+          const res = await uploadReceipt(compressedFile, token, abortControllerRef.current.signal);
           jobIds.push({
             jobId: res.data.jobId,
-            originalName: file.name,
+            originalName: compressedFile.name || file.name,
             index: idx
           });
         } catch (error) {
           console.error(`Upload failed for file ${idx + 1}:`, error);
+          const status = error?.response?.status;
+          const errorMessage =
+            status === 413
+              ? "File too large for upload. Try a smaller image."
+              : error?.response?.data?.error || error.message || "Upload failed";
           setResults(prev => {
             const updated = [...prev];
-            updated[idx] = { error: error.message || "Upload failed" };
+            updated[idx] = { error: errorMessage };
             return updated;
           });
         }
@@ -245,9 +310,19 @@ function UploadReceipt({ token, userId }) {
     }, 2000);
   };
 
+  const hasPendingResults = useMemo(() => results.some((r) => r === null), [results]);
+  const readyToSaveResults = useMemo(
+    () => results.filter((r) => r && !r.error && r.filePath),
+    [results]
+  );
+
   const handleSaveAll = async () => {
-    if (!results.length || results.some(r => !r)) {
+    if (!results.length || hasPendingResults) {
       alert("Please wait for all receipts to finish processing");
+      return;
+    }
+    if (!readyToSaveResults.length) {
+      alert("No successful receipt results to save");
       return;
     }
 
@@ -259,6 +334,11 @@ function UploadReceipt({ token, userId }) {
       // Save all receipts sequentially
       for (let idx = 0; idx < results.length; idx++) {
         const res = results[idx];
+        if (!res || res.error || !res.filePath) {
+          duplicates.push(`Receipt #${idx + 1}: ${res?.error || "No extracted result to save"}`);
+          continue;
+        }
+
         try {
           const receiptRes = await saveReceipt(
             {
@@ -677,18 +757,26 @@ function UploadReceipt({ token, userId }) {
                   <h4 style={{ marginTop: 0, marginBottom: 15, fontSize: isMobile ? 15 : 16, paddingRight: 80 }}>Receipt #{idx + 1}</h4>
                   {res ? (
                     <>
-                      <p style={{ margin: "8px 0", fontSize: isMobile ? 13 : 14 }}><strong>Shop:</strong> {res.extracted.shopName || "Not found"}</p>
-                      <p style={{ margin: "8px 0", fontSize: isMobile ? 13 : 14 }}><strong>Date:</strong> {res.extracted.date || "Not found"}</p>
-                      <p style={{ margin: "8px 0", fontSize: isMobile ? 13 : 14 }}><strong>Address:</strong> {res.extracted.address || "Not found"}</p>
-                      <p style={{ margin: "8px 0", fontSize: isMobile ? 13 : 14 }}><strong>TIN Number:</strong> {res.extracted.tinNumber || "Not found"}</p>
+                      {res.error ? (
+                        <p style={{ margin: "8px 0", fontSize: isMobile ? 13 : 14, color: "#b00020" }}>
+                          <strong>Error:</strong> {res.error}
+                        </p>
+                      ) : (
+                        <>
+                          <p style={{ margin: "8px 0", fontSize: isMobile ? 13 : 14 }}><strong>Shop:</strong> {res.extracted?.shopName || "Not found"}</p>
+                          <p style={{ margin: "8px 0", fontSize: isMobile ? 13 : 14 }}><strong>Date:</strong> {res.extracted?.date || "Not found"}</p>
+                          <p style={{ margin: "8px 0", fontSize: isMobile ? 13 : 14 }}><strong>Address:</strong> {res.extracted?.address || "Not found"}</p>
+                          <p style={{ margin: "8px 0", fontSize: isMobile ? 13 : 14 }}><strong>TIN Number:</strong> {res.extracted?.tinNumber || "Not found"}</p>
+                        </>
+                      )}
                     </>
                   ) : (
                     <p style={{ color: "#999", fontStyle: "italic", fontSize: isMobile ? 13 : 14 }}>Processing...</p>
                   )}
                 </div>
-                {res && (
+                {res && !res.error && (
                   <div style={{ borderTop: "2px solid #ddd", paddingTop: 15, marginTop: 15 }}>
-                    <p style={{ margin: 0, fontSize: isMobile ? 15 : 16, color: "#28a745", fontWeight: "bold" }}><strong>Total:</strong> {res.extracted.amountDue || "Not found"}</p>
+                    <p style={{ margin: 0, fontSize: isMobile ? 15 : 16, color: "#28a745", fontWeight: "bold" }}><strong>Total:</strong> {res.extracted?.amountDue || "Not found"}</p>
                   </div>
                 )}
               </div>
@@ -696,7 +784,7 @@ function UploadReceipt({ token, userId }) {
           </div>
           
           {/* Save All button */}
-          {results.every(r => r !== null) && (
+          {!hasPendingResults && readyToSaveResults.length > 0 && (
             <div style={{ marginTop: 20, textAlign: "center" }}>
               <button
                 onClick={handleSaveAll}
@@ -712,7 +800,7 @@ function UploadReceipt({ token, userId }) {
                   fontSize: 16,
                 }}
               >
-                {savingAll ? "Saving All..." : `Save All ${results.length} Receipt(s) to Database`}
+                {savingAll ? "Saving All..." : `Save All ${readyToSaveResults.length} Receipt(s) to Database`}
               </button>
             </div>
           )}

@@ -13,6 +13,7 @@ import LoadingSpinner from "./LoadingSpinner";
 import Biometrics from "./Biometrics";
 import BiometricsMonitor from "./BiometricsMonitor";
 import Leaves from "./Leaves";
+import LeavesMonitor from "./LeavesMonitor";
 import Assets from "./Assets";
 
 function App() {
@@ -529,7 +530,7 @@ function AppContent() {
             style={{
               width: "100%",
               padding: "12px 15px",
-              backgroundColor: location.pathname === '/leaves' ? COLOR_NAV_ACTIVE : "transparent",
+              backgroundColor: location.pathname.startsWith('/leaves') ? COLOR_NAV_ACTIVE : "transparent",
               color: hasEmployeeProfile ? "#fff" : "#6c757d",
               border: "none",
               borderRadius: 4,
@@ -538,22 +539,56 @@ function AppContent() {
               fontSize: 14,
               textAlign: "left",
               transition: "all 0.3s ease",
-              borderLeft: location.pathname === '/leaves' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
+              borderLeft: location.pathname.startsWith('/leaves') ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
               opacity: hasEmployeeProfile ? 1 : 0.5
             }}
             onMouseEnter={(e) => {
-              if (location.pathname !== "/leaves" && hasEmployeeProfile) {
+              if (!location.pathname.startsWith("/leaves") && hasEmployeeProfile) {
                 e.target.style.backgroundColor = "#34495e";
               }
             }}
             onMouseLeave={(e) => {
-              if (location.pathname !== "/leaves" && hasEmployeeProfile) {
+              if (!location.pathname.startsWith("/leaves") && hasEmployeeProfile) {
                 e.target.style.backgroundColor = "transparent";
               }
             }}
           >
             Leaves {!hasEmployeeProfile && "🔒"}
           </button>
+          {(userRole === 1 || userRole === 2) && (
+            <button
+              data-subnav="true"
+              onClick={() => { if (hasEmployeeProfile) { navigate('/leaves/monitor'); setSidebarOpen(false); } }}
+              disabled={!hasEmployeeProfile}
+              style={{
+                width: "100%",
+                padding: "10px 15px 10px 30px",
+                backgroundColor: location.pathname === '/leaves/monitor' ? COLOR_NAV_ACTIVE : "transparent",
+                color: hasEmployeeProfile ? "#fff" : "#6c757d",
+                border: "none",
+                borderRadius: 4,
+                cursor: hasEmployeeProfile ? "pointer" : "not-allowed",
+                marginBottom: 10,
+                fontSize: 13,
+                textAlign: "left",
+                transition: "all 0.3s ease",
+                borderLeft: location.pathname === '/leaves/monitor' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
+                opacity: hasEmployeeProfile ? 1 : 0.5
+              }}
+              onMouseEnter={(e) => {
+                if (location.pathname !== "/leaves/monitor" && hasEmployeeProfile) {
+                  e.target.style.backgroundColor = "#34495e";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (location.pathname !== "/leaves/monitor" && hasEmployeeProfile) {
+                  e.target.style.backgroundColor = "transparent";
+                }
+              }}
+            >
+              Leaves Monitor
+            </button>
+          )}
           <button
             onClick={() => { if (hasEmployeeProfile) { navigate('/reimbursements'); setSidebarOpen(false); } }}
             disabled={!hasEmployeeProfile}
@@ -781,6 +816,9 @@ function AppContent() {
                 <BiometricsMonitor token={token} userId={userId} />
               ) : <Navigate to="/profile" replace />} />
               <Route path="/leaves" element={hasEmployeeProfile ? <Leaves token={token} userId={userId} userRole={userRole} /> : <Navigate to="/profile" replace />} />
+              <Route path="/leaves/monitor" element={hasEmployeeProfile && (userRole === 1 || userRole === 2) ? (
+                <LeavesMonitor token={token} userId={userId} />
+              ) : <Navigate to="/profile" replace />} />
               <Route path="/reimbursements" element={hasEmployeeProfile ? <UploadReceipt token={token} userId={userId} /> : <Navigate to="/profile" replace />} />
               <Route path="/assets" element={hasEmployeeProfile ? <Assets token={token} /> : <Navigate to="/profile" replace />} />
               <Route path="/approvals" element={hasEmployeeProfile && (userRole === 1 || userRole === 2) ? <HRApprovals token={token} /> : <Navigate to="/profile" replace />} />

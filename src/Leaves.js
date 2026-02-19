@@ -241,11 +241,14 @@ function Leaves({ token, userId, userRole }) {
               </div>
             </div>
           </div>
-          <p style={{ marginTop: 15, marginBottom: 0, fontSize: isMobile ? 12 : 13, color: "#6c757d" }}>
-            Months employed: {leaveBalance.monthsEmployed ?? 0}. Eligible after 6 months: {leaveBalance.eligibleToUse ? "Yes" : "No"}.
-          </p>
+          {/*<p style={{ marginTop: 15, marginBottom: 0, fontSize: isMobile ? 12 : 13, color: "#6c757d" }}>
+            Months employed: {leaveBalance.monthsEmployed ?? 0}.
+          </p> */ }
           <p style={{ marginTop: 6, marginBottom: 0, fontSize: isMobile ? 12 : 13, color: "#6c757d", fontStyle: "italic" }}>
-            You earn 1 leave credit per month per type. Leaves filed before 6 months are deducted and applied once eligible. Hired on: {leaveBalance.dateHired ? formatDate(leaveBalance.dateHired) : "N/A"}
+            You earn 1 leave credit per month per type. Leaves filed before 6 months are deducted and applied once eligible.
+          </p>
+           <p style={{ marginTop: 6, marginBottom: 0, fontSize: isMobile ? 12 : 13, color: "#6c757d", fontStyle: "italic" }}>
+           Date Hired: {leaveBalance.dateHired ? formatDate(leaveBalance.dateHired) : "N/A"}
           </p>
         </div>
       )}
