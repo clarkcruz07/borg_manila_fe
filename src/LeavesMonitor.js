@@ -3,7 +3,6 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 function LeavesMonitor({ token }) {
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
   const [summaryRows, setSummaryRows] = useState([]);
-  const [grandTotals, setGrandTotals] = useState({ vacation: 0, sick: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -28,7 +27,6 @@ function LeavesMonitor({ token }) {
       }
 
       setSummaryRows(Array.isArray(data.rows) ? data.rows : []);
-      setGrandTotals(data.grandTotals || { vacation: 0, sick: 0, total: 0 });
     } catch (err) {
       setError(err.message || "Failed to load leave monitor data");
     } finally {
