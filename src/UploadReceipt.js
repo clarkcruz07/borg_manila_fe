@@ -4,6 +4,7 @@ import { listReceipts, saveReceipt, uploadReceipt, getJobStatus, cancelJob } fro
 const MAX_UPLOAD_FILES = 5;
 const MAX_UPLOAD_FILE_SIZE_BYTES = 4 * 1024 * 1024;
 const MAX_IMAGE_DIMENSION = 1600;
+const MAX_JOB_POLL_MS = 5 * 60 * 1000;
 
 function canvasToBlob(canvas, type, quality) {
   return new Promise((resolve) => {
@@ -75,6 +76,7 @@ function UploadReceipt({ token, userId }) {
   const cameraInputRef = useRef();    
   const abortControllerRef = useRef(null); // For canceling uploads
   const pollingIntervalRef = useRef(null); // For job status polling
+  const pollingInFlightRef = useRef(false); // Prevent overlapping polling cycles
 
   // Handle mobile detection
   useEffect(() => {
@@ -257,55 +259,92 @@ function UploadReceipt({ token, userId }) {
       clearInterval(pollingIntervalRef.current);
     }
 
-    const jobsToCheck = [...jobIds]; // Make a copy
+    const jobsToCheck = jobIds.map((job) => ({ ...job, startedAt: Date.now() }));
 
     // Poll every 2 seconds
     pollingIntervalRef.current = setInterval(async () => {
+      if (pollingInFlightRef.current) return;
+      pollingInFlightRef.current = true;
+
       // Check if there are still jobs to poll
       if (jobsToCheck.length === 0) {
         clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = null;
+        pollingInFlightRef.current = false;
         setErrorUpload("");
         return;
       }
 
-      // Process each remaining job
-      for (let i = jobsToCheck.length - 1; i >= 0; i--) {
-        const job = jobsToCheck[i];
-        
-        try {
-          const res = await getJobStatus(job.jobId, token);
-          const jobData = res.data;
-
-          if (jobData.status === 'completed') {
-            // Update result with jobId
+      try {
+        // Process each remaining job
+        for (let i = jobsToCheck.length - 1; i >= 0; i--) {
+          const job = jobsToCheck[i];
+          const elapsed = Date.now() - job.startedAt;
+          if (elapsed > MAX_JOB_POLL_MS) {
             setResults(prev => {
               const updated = [...prev];
-              updated[job.index] = { ...jobData.result, jobId: job.jobId };
+              updated[job.index] = { error: "Processing timed out. Please retry this receipt." };
               return updated;
             });
-
-            // Remove from pending jobs and tracking array
             setPendingJobs(prev => prev.filter(j => j.jobId !== job.jobId));
             jobsToCheck.splice(i, 1);
-            
-          } else if (jobData.status === 'failed') {
-            // Update with error
-            setResults(prev => {
-              const updated = [...prev];
-              updated[job.index] = { error: jobData.error || "Processing failed" };
-              return updated;
-            });
-
-            // Remove from pending jobs and tracking array
-            setPendingJobs(prev => prev.filter(j => j.jobId !== job.jobId));
-            jobsToCheck.splice(i, 1);
+            continue;
           }
-          // If status is 'pending' or 'processing', keep polling
-        } catch (error) {
-          console.error(`Failed to get status for job ${job.jobId}:`, error);
-          // Keep job in array to retry
+
+          try {
+            const res = await getJobStatus(job.jobId, token);
+
+            // Some proxies can return 304 for this endpoint; continue polling as pending.
+            if (res.status === 304) {
+              continue;
+            }
+
+            const jobData = res.data;
+
+            if (jobData.status === 'completed') {
+              // Update result with jobId
+              setResults(prev => {
+                const updated = [...prev];
+                updated[job.index] = { ...jobData.result, jobId: job.jobId };
+                return updated;
+              });
+
+              // Remove from pending jobs and tracking array
+              setPendingJobs(prev => prev.filter(j => j.jobId !== job.jobId));
+              jobsToCheck.splice(i, 1);
+            } else if (jobData.status === 'failed' || jobData.status === 'cancelled') {
+              // Update with error
+              setResults(prev => {
+                const updated = [...prev];
+                updated[job.index] = { error: jobData.error || "Processing failed" };
+                return updated;
+              });
+
+              // Remove from pending jobs and tracking array
+              setPendingJobs(prev => prev.filter(j => j.jobId !== job.jobId));
+              jobsToCheck.splice(i, 1);
+            }
+            // If status is 'pending' or 'processing', keep polling
+          } catch (error) {
+            const status = error?.response?.status;
+
+            if (status === 404) {
+              setResults(prev => {
+                const updated = [...prev];
+                updated[job.index] = { error: "Job no longer exists. Please upload again." };
+                return updated;
+              });
+              setPendingJobs(prev => prev.filter(j => j.jobId !== job.jobId));
+              jobsToCheck.splice(i, 1);
+              continue;
+            }
+
+            console.error(`Failed to get status for job ${job.jobId}:`, error);
+            // Keep job in array to retry until timeout
+          }
         }
+      } finally {
+        pollingInFlightRef.current = false;
       }
     }, 2000);
   };

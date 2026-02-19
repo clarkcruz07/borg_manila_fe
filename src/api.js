@@ -38,7 +38,13 @@ export const getJobStatus = (jobId, token) => {
   return axios.get(`${API_BASE_URL}/api/receipts/jobs/${jobId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+      "If-None-Match": "0",
+      "If-Modified-Since": "Thu, 01 Jan 1970 00:00:00 GMT",
     },
+    params: { t: Date.now() },
+    validateStatus: (status) => (status >= 200 && status < 300) || status === 304,
   });
 };
 
