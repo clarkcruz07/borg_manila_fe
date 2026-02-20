@@ -331,7 +331,7 @@ function UploadReceipt({ token, userId }) {
             if (status === 404) {
               setResults(prev => {
                 const updated = [...prev];
-                updated[job.index] = { error: "Job no longer exists. Please upload again." };
+                updated[job.index] = { error: "Required receipt fields were not found. Please re-upload this receipt." };
                 return updated;
               });
               setPendingJobs(prev => prev.filter(j => j.jobId !== job.jobId));
@@ -354,6 +354,7 @@ function UploadReceipt({ token, userId }) {
     () => results.filter((r) => r && !r.error && r.filePath),
     [results]
   );
+  const isProcessingReceipts = loading || pendingJobs.length > 0;
 
   const handleSaveAll = async () => {
     if (!results.length || hasPendingResults) {
@@ -678,23 +679,23 @@ function UploadReceipt({ token, userId }) {
       {files.length > 0 && (
         <button
           onClick={submitReceipt}
-          disabled={loading}
+          disabled={isProcessingReceipts}
           style={{
             display: "block",
             width: "100%",
             marginBottom: 20,
             padding: "16px 24px",
-            backgroundColor: loading ? "#6c757d" : "#dc3545",
+            backgroundColor: isProcessingReceipts ? "#6c757d" : "#dc3545",
             color: "#fff",
             border: "none",
             borderRadius: 8,
-            cursor: loading ? "not-allowed" : "pointer",
+            cursor: isProcessingReceipts ? "not-allowed" : "pointer",
             fontSize: 18,
             fontWeight: "bold",
             boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
           }}
         >
-          {loading ? "Processing..." : `Process ${files.length} Receipt${files.length > 1 ? 's' : ''}`}
+          {isProcessingReceipts ? "Processing..." : `Process ${files.length} Receipt${files.length > 1 ? 's' : ''}`}
         </button>
       )}
       
@@ -711,7 +712,7 @@ function UploadReceipt({ token, userId }) {
         </div>
       )}
       {/* Full-page loader */}
-      {loading && (
+      {isProcessingReceipts && (
         <div style={{
           position: "fixed",
           top: 0, left: 0, right: 0, bottom: 0,
@@ -732,9 +733,11 @@ function UploadReceipt({ token, userId }) {
             animation: "spin 1s linear infinite"
           }}></div>
           <p style={{ marginTop: 10, textAlign: "center" }}>
-            {processingProgress.total > 0 
+            {loading && processingProgress.total > 0 
               ? `Uploading ${processingProgress.current} of ${processingProgress.total}...`
-              : "Uploading receipts..."}
+              : pendingJobs.length > 0
+                ? `Processing ${pendingJobs.length} receipt(s) in background...`
+                : "Uploading receipts..."}
           </p>
           {pendingJobs.length > 0 && (
             <p style={{ fontSize: 14, marginTop: 5, color: "#bbb", textAlign: "center" }}>

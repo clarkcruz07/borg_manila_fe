@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import LoadingSpinner from "./LoadingSpinner";
+import Skeleton from "./Skeleton";
 
 function HRApprovals({ token }) {
   const [activeTab, setActiveTab] = useState("profiles");
@@ -233,7 +233,17 @@ function HRApprovals({ token }) {
     return (
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? 15 : 0 }}>
         <h2 style={{ marginBottom: 20, fontSize: isMobile ? 20 : 24 }}>Approvals</h2>
-        <LoadingSpinner message="Loading pending approvals..." />
+        <div style={{ maxWidth: 700, margin: '0 auto' }}>
+          <Skeleton width={180} height={28} style={{ margin: '0 0 24px 0' }} />
+          {[...Array(3)].map((_, i) => (
+            <div key={i} style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 24, marginBottom: 24 }}>
+              <Skeleton width="60%" height={18} style={{ marginBottom: 12 }} />
+              <Skeleton width="100%" height={36} style={{ marginBottom: 10 }} />
+              <Skeleton width="100%" height={36} style={{ marginBottom: 10 }} />
+              <Skeleton width={120} height={36} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

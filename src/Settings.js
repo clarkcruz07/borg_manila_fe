@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import LoadingSpinner from "./LoadingSpinner";
+import Skeleton from "./Skeleton";
 
 function Settings({ token }) {
   const [activeTab, setActiveTab] = useState("departments");
@@ -255,7 +255,20 @@ function Settings({ token }) {
   };
 
   if (loading) {
-    return <LoadingSpinner message="Loading settings..." />;
+    // Skeleton for settings cards and fields
+    return (
+      <div style={{ maxWidth: 700, margin: '0 auto' }}>
+        <Skeleton width={180} height={28} style={{ margin: '0 0 24px 0' }} />
+        {[...Array(3)].map((_, i) => (
+          <div key={i} style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 24, marginBottom: 24 }}>
+            <Skeleton width="60%" height={18} style={{ marginBottom: 12 }} />
+            <Skeleton width="100%" height={36} style={{ marginBottom: 10 }} />
+            <Skeleton width="100%" height={36} style={{ marginBottom: 10 }} />
+            <Skeleton width={120} height={36} />
+          </div>
+        ))}
+      </div>
+    );
   }
 
   return (

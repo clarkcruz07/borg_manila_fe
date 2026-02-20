@@ -9,7 +9,7 @@ import EmployeeProfile from "./EmployeeProfile";
 import HRApprovals from "./HRApprovals";
 import ManagerReimbursements from "./ManagerReimbursements";
 import Settings from "./Settings";
-import LoadingSpinner from "./LoadingSpinner";
+import Skeleton from "./Skeleton";
 import Biometrics from "./Biometrics";
 import BiometricsMonitor from "./BiometricsMonitor";
 import Leaves from "./Leaves";
@@ -177,8 +177,8 @@ function AppContent() {
     localStorage.removeItem("role");
   };
 
-  if (loading || checkingProfile) {
-    return <LoadingSpinner size="large" message="Initializing application..." />;
+  if (loading) {
+    return <Skeleton width="100%" height={60} style={{ margin: '40px 0' }} />;
   }
 
   // If not logged in, show login page
@@ -264,7 +264,7 @@ function AppContent() {
         right: 0,
         backgroundColor: "#333",
         color: "#fff",
-        padding: "15px 20px",
+        padding: "10px 20px",
         zIndex: 1001,
         alignItems: "center",
         justifyContent: "space-between",
@@ -272,12 +272,14 @@ function AppContent() {
       }}>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
+          disabled={checkingProfile}
           style={{
             backgroundColor: "transparent",
             border: "none",
             color: "#fff",
             fontSize: 24,
-            cursor: "pointer",
+            cursor: checkingProfile ? "not-allowed" : "pointer",
+            opacity: checkingProfile ? 0.6 : 1,
             padding: 5
           }}
         >
@@ -335,7 +337,8 @@ function AppContent() {
           overflowY: "auto",
           overflowX: "hidden",
           zIndex: 1000,
-          boxSizing: "border-box"
+          boxSizing: "border-box",
+          pointerEvents: checkingProfile ? "none" : "auto"
         }}>
         <div style={{ padding: "20px", borderBottom: "1px solid #fff", marginBottom: 20 }}>
           <img
@@ -530,7 +533,7 @@ function AppContent() {
             style={{
               width: "100%",
               padding: "12px 15px",
-              backgroundColor: location.pathname.startsWith('/leaves') ? COLOR_NAV_ACTIVE : "transparent",
+              backgroundColor: location.pathname === '/leaves' ? COLOR_NAV_ACTIVE : "transparent",
               color: hasEmployeeProfile ? "#fff" : "#6c757d",
               border: "none",
               borderRadius: 4,
@@ -539,16 +542,16 @@ function AppContent() {
               fontSize: 14,
               textAlign: "left",
               transition: "all 0.3s ease",
-              borderLeft: location.pathname.startsWith('/leaves') ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
+              borderLeft: location.pathname === '/leaves' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
               opacity: hasEmployeeProfile ? 1 : 0.5
             }}
             onMouseEnter={(e) => {
-              if (!location.pathname.startsWith("/leaves") && hasEmployeeProfile) {
+              if (location.pathname !== "/leaves" && hasEmployeeProfile) {
                 e.target.style.backgroundColor = "#34495e";
               }
             }}
             onMouseLeave={(e) => {
-              if (!location.pathname.startsWith("/leaves") && hasEmployeeProfile) {
+              if (location.pathname !== "/leaves" && hasEmployeeProfile) {
                 e.target.style.backgroundColor = "transparent";
               }
             }}
@@ -595,7 +598,7 @@ function AppContent() {
             style={{
               width: "100%",
               padding: "12px 15px",
-              backgroundColor: location.pathname === '/reimbursements' ? COLOR_NAV_ACTIVE : "transparent",
+              backgroundColor: location.pathname.startsWith('/reimbursements') ? COLOR_NAV_ACTIVE : "transparent",
               color: hasEmployeeProfile ? "#fff" : "#6c757d",
               border: "none",
               borderRadius: 4,
@@ -604,16 +607,16 @@ function AppContent() {
               fontSize: 14,
               textAlign: "left",
               transition: "all 0.3s ease",
-              borderLeft: location.pathname === '/reimbursements' ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
+              borderLeft: location.pathname.startsWith('/reimbursements') ? `4px solid ${COLOR_NAV_ACTIVE_ACCENT}` : "4px solid transparent",
               opacity: hasEmployeeProfile ? 1 : 0.5
             }}
             onMouseEnter={(e) => {
-              if (location.pathname !== "/reimbursements" && hasEmployeeProfile) {
+              if (!location.pathname.startsWith("/reimbursements") && hasEmployeeProfile) {
                 e.target.style.backgroundColor = "#34495e";
               }
             }}
             onMouseLeave={(e) => {
-              if (location.pathname !== "/reimbursements" && hasEmployeeProfile) {
+              if (!location.pathname.startsWith("/reimbursements") && hasEmployeeProfile) {
                 e.target.style.backgroundColor = "transparent";
               }
             }}
@@ -779,7 +782,7 @@ function AppContent() {
       <main className="main-content" style={{
         flex: 1,
         marginLeft: 250,
-        padding: "20px",
+        padding: "10px",
         paddingTop: "70px",
         display: "flex",
         flexDirection: "column",
@@ -802,7 +805,7 @@ function AppContent() {
         {/* Page content */}
         <div style={{ flex: 1 }}>
           {checkingProfile ? (
-            <LoadingSpinner />
+            <Skeleton width="100%" height={60} style={{ margin: '40px 0' }} />
           ) : (
             <Routes>
               <Route path="/" element={<Navigate to={hasEmployeeProfile ? "/dashboard" : "/profile"} replace />} />
@@ -817,7 +820,7 @@ function AppContent() {
               ) : <Navigate to="/profile" replace />} />
               <Route path="/leaves" element={hasEmployeeProfile ? <Leaves token={token} userId={userId} userRole={userRole} /> : <Navigate to="/profile" replace />} />
               <Route path="/leaves/monitor" element={hasEmployeeProfile && (userRole === 1 || userRole === 2) ? (
-                <LeavesMonitor token={token} userId={userId} />
+                <LeavesMonitor token={token} userId={userId} userRole={userRole} />
               ) : <Navigate to="/profile" replace />} />
               <Route path="/reimbursements" element={hasEmployeeProfile ? <UploadReceipt token={token} userId={userId} /> : <Navigate to="/profile" replace />} />
               <Route path="/assets" element={hasEmployeeProfile ? <Assets token={token} /> : <Navigate to="/profile" replace />} />

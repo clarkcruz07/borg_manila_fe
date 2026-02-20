@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
-import LoadingSpinner from "./LoadingSpinner";
+import Skeleton from "./Skeleton";
 
 const OFFICE_LOCATION = {
   latitude: 14.5829394,
@@ -433,7 +433,7 @@ function Dashboard({ token, userRole, userId }) {
         }
 
         const leaveResponse = await fetch(
-          `${API_BASE_URL}/api/leaves/balance`,
+          `${API_BASE_URL}/api/employee/profile/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -443,7 +443,16 @@ function Dashboard({ token, userRole, userId }) {
 
         if (leaveResponse.ok) {
           const leaveData = await leaveResponse.json();
-          setLeaveBalance(leaveData);
+          setLeaveBalance({
+            vacation: {
+              vacationCredits: leaveData.vacationCredits ?? 0,
+              usedVacationCredits: leaveData.usedVacationCredits ?? 0,
+            },
+            sick: {
+              sickCredits: leaveData.sickCredits ?? 0,
+              usedSickCredits: leaveData.usedSickCredits ?? 0,
+            }
+          });
         }
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
@@ -633,7 +642,18 @@ function Dashboard({ token, userRole, userId }) {
       )}
 
       {loading ? (
-        <LoadingSpinner message="Loading dashboard data..." />
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 24 }}>
+          {[...Array(isMobile ? 2 : 6)].map((_, i) => (
+            <div key={i} style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 24 }}>
+              <Skeleton width={60} height={60} borderRadius={30} style={{ marginBottom: 16 }} />
+              <Skeleton width="80%" height={18} />
+              <Skeleton width="60%" height={14} />
+              <Skeleton width="100%" height={14} />
+              <Skeleton width="100%" height={14} />
+              <Skeleton width={90} height={32} borderRadius={6} style={{ marginTop: 18 }} />
+            </div>
+          ))}
+        </div>
       ) : (
         <>
           <h2 style={{ marginBottom: isMobile ? 20 : 30, fontSize: isMobile ? 20 : 24 }}>Dashboard</h2>
@@ -856,7 +876,7 @@ function Dashboard({ token, userRole, userId }) {
             </div>
           </div>
 
-          {/* Summary Cards */}
+         
           {/* Summary Cards */}
           <div style={{
             display: "grid",
@@ -875,20 +895,16 @@ function Dashboard({ token, userRole, userId }) {
                   <div>
                     <div style={{ ...cardSubtitleStyle, color: "#6c757d" }}>Vacation</div>
                     <div style={{ ...cardValueStyle, color: "#28a745" }}>
-                      {leaveBalance.vacation?.availableCredits ?? 0}
+                      {leaveBalance.vacation?.vacationCredits ?? 0}
                     </div>
-                    <div style={cardSubtitleStyle}>
-                      {leaveBalance.vacation?.usedCredits ?? 0} used / {leaveBalance.vacation?.totalCredits ?? 0} total
-                    </div>
+                   
                   </div>
                   <div>
                     <div style={{ ...cardSubtitleStyle, color: "#6c757d" }}>Sick</div>
                     <div style={{ ...cardValueStyle, color: "#28a745" }}>
-                      {leaveBalance.sick?.availableCredits ?? 0}
+                      {leaveBalance.sick?.sickCredits ?? 0}
                     </div>
-                    <div style={cardSubtitleStyle}>
-                      {leaveBalance.sick?.usedCredits ?? 0} used / {leaveBalance.sick?.totalCredits ?? 0} total
-                    </div>
+                    
                   </div>
                 </div>
               ) : (

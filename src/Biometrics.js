@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import LoadingSpinner from "./LoadingSpinner";
+import Skeleton from "./Skeleton";
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
 
@@ -252,7 +252,18 @@ function Biometrics({ token }) {
         boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
       }}>
         {loading ? (
-          <LoadingSpinner message="Loading attendance history..." />
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 24 }}>
+            {[...Array(isMobile ? 2 : 6)].map((_, i) => (
+              <div key={i} style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 24 }}>
+                <Skeleton width={60} height={60} borderRadius={30} style={{ marginBottom: 16 }} />
+                <Skeleton width="80%" height={18} />
+                <Skeleton width="60%" height={14} />
+                <Skeleton width="100%" height={14} />
+                <Skeleton width="100%" height={14} />
+                <Skeleton width={90} height={32} borderRadius={6} style={{ marginTop: 18 }} />
+              </div>
+            ))}
+          </div>
         ) : error ? (
           <div style={{
             padding: isMobile ? 15 : 20,

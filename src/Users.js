@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import LoadingSpinner from "./LoadingSpinner";
+import Skeleton from "./Skeleton";
 
 function Users({ token, userRole }) {
   const [users, setUsers] = useState([]);
@@ -309,7 +309,28 @@ function Users({ token, userRole }) {
   };
 
   if (loading) {
-    return <LoadingSpinner message="Loading employees..." />;
+    // Skeleton for entire card list
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 24 }}>
+        {[...Array(isMobile ? 2 : 6)].map((_, i) => (
+          <div key={i} style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001', padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+              <Skeleton width={60} height={60} borderRadius={30} style={{ marginRight: 16 }} />
+              <div style={{ flex: 1 }}>
+                <Skeleton width="80%" height={18} />
+                <Skeleton width="60%" height={14} />
+              </div>
+            </div>
+            <Skeleton width="100%" height={14} />
+            <Skeleton width="100%" height={14} />
+            <Skeleton width="60%" height={14} />
+            <div style={{ marginTop: 18 }}>
+              <Skeleton width={90} height={32} borderRadius={6} />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   if (error) {

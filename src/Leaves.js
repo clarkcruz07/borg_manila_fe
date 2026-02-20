@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
-import LoadingSpinner from "./LoadingSpinner";
+import Skeleton from "./Skeleton";
 
 function Leaves({ token, userId, userRole }) {
   const [leaveBalance, setLeaveBalance] = useState(null);
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submittingLeave, setSubmittingLeave] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [activeTab, setActiveTab] = useState("apply");
@@ -27,17 +28,26 @@ function Leaves({ token, userId, userRole }) {
 
   const fetchLeaveBalance = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/leaves/balance`, {
+      const response = await fetch(`${API_BASE_URL}/api/employee/profile/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await response.json();
       if (response.ok) {
-        setLeaveBalance(data);
+        const data = await response.json();
+        setLeaveBalance({
+          vacation: {
+            vacationCredits: data.vacationCredits ?? 0,
+            usedVacationCredits: data.usedVacationCredits ?? 0,
+          },
+          sick: {
+            sickCredits: data.sickCredits ?? 0,
+            usedSickCredits: data.usedSickCredits ?? 0,
+          }
+        });
       }
     } catch (err) {
       console.error("Error fetching leave balance:", err);
     }
-  }, [API_BASE_URL, token]);
+  }, [API_BASE_URL, token, userId]);
 
   const fetchMyLeaves = useCallback(async () => {
     try {
@@ -97,6 +107,7 @@ function Leaves({ token, userId, userRole }) {
     }
 
     try {
+      setSubmittingLeave(true);
       const response = await fetch(`${API_BASE_URL}/api/leaves/apply`, {
         method: "POST",
         headers: {
@@ -119,11 +130,12 @@ function Leaves({ token, userId, userRole }) {
         endDate: "",
         reason: "",
       });
-      fetchLeaveBalance();
-      fetchMyLeaves();
+      await Promise.all([fetchLeaveBalance(), fetchMyLeaves()]);
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
       setError(err.message);
+    } finally {
+      setSubmittingLeave(false);
     }
   };
 
@@ -187,71 +199,96 @@ function Leaves({ token, userId, userRole }) {
     };
   };
 
-  if (loading && !leaveBalance) {
-    return <LoadingSpinner message="Loading leave information..." />;
-  }
-
   return (
+    <>
+      {submittingLeave && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(255, 255, 255, 0.78)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "column",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              border: "5px solid #f1f1f1",
+              borderTop: "5px solid #dc3545",
+              borderRadius: "50%",
+              animation: "leaveSpin 0.9s linear infinite",
+            }}
+          />
+          <p style={{ marginTop: 14, color: "#333", fontWeight: 500, fontSize: 14 }}>
+            Filing leave request...
+          </p>
+          <style>{`
+            @keyframes leaveSpin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      )}
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? 15 : 0 }}>
       <h2 style={{ marginBottom: isMobile ? 20 : 30, fontSize: isMobile ? 20 : 24 }}>
         Leave Management
       </h2>
 
-      {leaveBalance && (
+      <div
+        style={{
+          backgroundColor: "#fff",
+          borderRadius: 8,
+          padding: isMobile ? 20 : 30,
+          marginBottom: 20,
+          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+          borderTop: "4px solid #28a745",
+        }}
+      >
+        <h3 style={{ marginTop: 0, marginBottom: 20, fontSize: isMobile ? 18 : 20 }}>
+          Your Leave Balance
+        </h3>
         <div
           style={{
-            backgroundColor: "#fff",
-            borderRadius: 8,
-            padding: isMobile ? 20 : 30,
-            marginBottom: 20,
-            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-            borderTop: "4px solid #28a745",
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)",
+            gap: isMobile ? 15 : 20,
           }}
         >
-          <h3 style={{ marginTop: 0, marginBottom: 20, fontSize: isMobile ? 18 : 20 }}>
-            Your Leave Balance
-          </h3>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)",
-              gap: isMobile ? 15 : 20,
-            }}
-          >
-            <div>
-              <div style={{ fontSize: isMobile ? 11 : 12, color: "#6c757d", marginBottom: 5 }}>
-                Vacation Leave
-              </div>
-              <div style={{ fontSize: isMobile ? 28 : 36, fontWeight: "bold", color: "#28a745" }}>
-                {leaveBalance.vacation?.availableCredits ?? 0}
-              </div>
-              <div style={{ fontSize: isMobile ? 12 : 13, color: "#6c757d" }}>
-                {leaveBalance.vacation?.usedCredits ?? 0} used / {leaveBalance.vacation?.totalCredits ?? 0} total
-              </div>
+          <div>
+            <div style={{ fontSize: isMobile ? 11 : 12, color: "#6c757d", marginBottom: 5 }}>
+              Vacation Leave
             </div>
-            <div>
-              <div style={{ fontSize: isMobile ? 11 : 12, color: "#6c757d", marginBottom: 5 }}>
-                Sick Leave
-              </div>
-              <div style={{ fontSize: isMobile ? 28 : 36, fontWeight: "bold", color: "#28a745" }}>
-                {leaveBalance.sick?.availableCredits ?? 0}
-              </div>
-              <div style={{ fontSize: isMobile ? 12 : 13, color: "#6c757d" }}>
-                {leaveBalance.sick?.usedCredits ?? 0} used / {leaveBalance.sick?.totalCredits ?? 0} total
-              </div>
+            <div style={{ fontSize: isMobile ? 28 : 36, fontWeight: "bold", color: "#28a745", minHeight: isMobile ? 34 : 44 }}>
+              {loading && !leaveBalance ? (
+                <Skeleton width={isMobile ? 44 : 56} height={isMobile ? 28 : 36} />
+              ) : (
+                leaveBalance?.vacation?.vacationCredits ?? 0
+              )}
             </div>
           </div>
-          {/*<p style={{ marginTop: 15, marginBottom: 0, fontSize: isMobile ? 12 : 13, color: "#6c757d" }}>
-            Months employed: {leaveBalance.monthsEmployed ?? 0}.
-          </p> */ }
-          <p style={{ marginTop: 6, marginBottom: 0, fontSize: isMobile ? 12 : 13, color: "#6c757d", fontStyle: "italic" }}>
-            You earn 1 leave credit per month per type. Leaves filed before 6 months are deducted and applied once eligible.
-          </p>
-           <p style={{ marginTop: 6, marginBottom: 0, fontSize: isMobile ? 12 : 13, color: "#6c757d", fontStyle: "italic" }}>
-           Date Hired: {leaveBalance.dateHired ? formatDate(leaveBalance.dateHired) : "N/A"}
-          </p>
+          <div>
+            <div style={{ fontSize: isMobile ? 11 : 12, color: "#6c757d", marginBottom: 5 }}>
+              Sick Leave
+            </div>
+            <div style={{ fontSize: isMobile ? 28 : 36, fontWeight: "bold", color: "#28a745", minHeight: isMobile ? 34 : 44 }}>
+              {loading && !leaveBalance ? (
+                <Skeleton width={isMobile ? 44 : 56} height={isMobile ? 28 : 36} />
+              ) : (
+                leaveBalance?.sick?.sickCredits ?? 0
+              )}
+            </div>
+          </div>
         </div>
-      )}
+        <p style={{ marginTop: 6, marginBottom: 0, fontSize: isMobile ? 12 : 13, color: "#6c757d", fontStyle: "italic" }}>
+          You earn 1 leave credit per month per type. Leaves filed before 6 months are deducted and applied once eligible.
+        </p>
+      </div>
 
       {error && (
         <div
@@ -443,18 +480,20 @@ function Leaves({ token, userId, userRole }) {
 
             <button
               type="submit"
+              disabled={submittingLeave}
               style={{
                 backgroundColor: "#dc3545",
                 color: "#fff",
                 padding: isMobile ? "10px 20px" : "12px 30px",
                 border: "none",
                 borderRadius: 4,
-                cursor: "pointer",
+                cursor: submittingLeave ? "not-allowed" : "pointer",
+                opacity: submittingLeave ? 0.7 : 1,
                 fontSize: isMobile ? 14 : 16,
                 fontWeight: "500",
               }}
             >
-              Submit Leave Application
+              {submittingLeave ? "Submitting..." : "Submit Leave Application"}
             </button>
           </form>
         </div>
@@ -527,6 +566,7 @@ function Leaves({ token, userId, userRole }) {
         </div>
       )}
     </div>
+    </>
   );
 }
 
