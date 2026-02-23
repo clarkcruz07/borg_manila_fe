@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from
 import UploadReceipt from "./UploadReceipt";
 import Login from "./Login";
 import ChangePassword from "./ChangePassword";
+import ForgotPassword from "./ForgotPassword";
+import ForgotPasswordChange from "./ForgotPasswordChange";
 import Users from "./Users";
 import Dashboard from "./Dashboard";
 import EmployeeProfile from "./EmployeeProfile";
@@ -183,7 +185,14 @@ function AppContent() {
 
   // If not logged in, show login page
   if (!currentUser) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <Routes>
+        <Route path="/" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/forgot-password/change" element={<ForgotPasswordChange />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
   }
 
   // If password needs to be changed, show password change page

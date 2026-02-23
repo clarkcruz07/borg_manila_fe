@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import borgImg from "./assets/imgs/borg_img.jpg";
 
 function Login({ onLoginSuccess }) {
@@ -112,6 +113,14 @@ function Login({ onLoginSuccess }) {
                 boxSizing: "border-box"
               }}
             />
+            <div style={{ marginTop: 8, textAlign: "right" }}>
+              <Link
+                to="/forgot-password"
+                style={{ color: "#CD1543", textDecoration: "none", fontSize: 13 }}
+              >
+                Forgot Password?
+              </Link>
+            </div>
           </div>
 
           <button

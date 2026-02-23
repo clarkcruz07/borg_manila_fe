@@ -344,17 +344,23 @@ function Users({ token, userRole }) {
   // Only Manager (1) and HR (2) can add users
   const canAddUsers = userRole === 1 || userRole === 2;
   const normalizedSearch = searchTerm.trim().toLowerCase();
-  const filteredUsers = users.filter((user) => {
-    if (!normalizedSearch) return true;
-    const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim().toLowerCase();
-    const position = (user.position || "").toLowerCase();
-    const email = (user.email || "").toLowerCase();
-    return (
-      fullName.includes(normalizedSearch) ||
-      position.includes(normalizedSearch) ||
-      email.includes(normalizedSearch)
-    );
-  });
+  const filteredUsers = users
+    .filter((user) => {
+      if (!normalizedSearch) return true;
+      const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim().toLowerCase();
+      const position = (user.position || "").toLowerCase();
+      const email = (user.email || "").toLowerCase();
+      return (
+        fullName.includes(normalizedSearch) ||
+        position.includes(normalizedSearch) ||
+        email.includes(normalizedSearch)
+      );
+    })
+    .sort((a, b) => {
+      const aTime = a?.dateHired ? new Date(a.dateHired).getTime() : Number.POSITIVE_INFINITY;
+      const bTime = b?.dateHired ? new Date(b.dateHired).getTime() : Number.POSITIVE_INFINITY;
+      return aTime - bTime;
+    });
 
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? 15 : 0 }}>
